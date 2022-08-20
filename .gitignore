@@ -99,4 +99,4 @@ docs/.env.example
 
 /artifacts
 /cache
-hardhat.config.js
+.env
