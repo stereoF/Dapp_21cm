@@ -24,14 +24,19 @@ describe("PrePrintTrack contract", function () {
 
   describe("Transaction", function(){
     it("should submit the paper's CID", async function(){
-      const { hardhatPrePrintTrack } = await loadFixture(
+      const { hardhatPrePrintTrack, owner } = await loadFixture(
         deployPrePrintTrackFixture
       );
       
       const paperCID = "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo";
       const keyInfo = 'test key information'
       await hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description');
-      expect(await hardhatPrePrintTrack.prePrintCIDs(0)).to.equal(paperCID)
+
+      expect(await hardhatPrePrintTrack.prePrintCIDs(0)).to.equal(paperCID);
+
+      let prePrintInfo = await hardhatPrePrintTrack.prePrints(paperCID);
+      expect(prePrintInfo.submitAddress).to.equal(owner.address);
+      expect(prePrintInfo.keyInfo).to.equal(keyInfo);
 
     });
 
@@ -46,9 +51,26 @@ describe("PrePrintTrack contract", function () {
       const blockTime = Date.now() + 15;
       await time.setNextBlockTimestamp(blockTime);
 
-      await expect(hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description'))
+      await expect(await hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description'))
       .to.emit(hardhatPrePrintTrack, "Submit")
       .withArgs(paperCID, keyInfo, owner.address, blockTime, 'test description');
     });
+
+    it("should fail if two same file submitted", async function() {
+      const { hardhatPrePrintTrack } = await loadFixture(
+        deployPrePrintTrackFixture
+      );
+
+      const paperCID = "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo";
+      const keyInfo = 'test key information'
+      
+      await hardhatPrePrintTrack.submit(paperCID, keyInfo, '1st submit');
+
+      await expect(
+        hardhatPrePrintTrack.submit(paperCID, keyInfo, '2nd submit')
+      ).to.be.revertedWith("The cid of file has existed");
+
+    });
+
   });
 });
