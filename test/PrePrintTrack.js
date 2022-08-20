@@ -17,7 +17,7 @@ describe("PrePrintTrack contract", function () {
         deployPrePrintTrackFixture
       );
 
-      expect(owner.address).to.equal(hardhatPrePrintTrack.owner());
+      expect(owner.address).to.equal(await hardhatPrePrintTrack.owner());
     });
   });
 
@@ -26,8 +26,11 @@ describe("PrePrintTrack contract", function () {
       const { hardhatPrePrintTrack, owner } = await loadFixture(
         deployPrePrintTrackFixture
       );
-
       
+      const paperCID = "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo";
+      await hardhatPrePrintTrack.submit(paperCID, 'test description');
+      expect(await hardhatPrePrintTrack.prePrintCIDs(0)).to.equal(paperCID)
+
     });
   });
 });

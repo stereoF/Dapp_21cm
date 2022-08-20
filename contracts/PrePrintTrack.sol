@@ -14,7 +14,7 @@ contract PrePrintTrack {
         uint submitTime; 
     }
 
-    mapping (string => PrePrintInfo) prePrints;
+    mapping (string => PrePrintInfo) public prePrints;
 
     event Submit(string _fileCID, address indexed _submitAddress, uint indexed _submitTime, string _desciption);
 
@@ -23,7 +23,7 @@ contract PrePrintTrack {
     }
 
     function submit(string memory _fileCID, string memory _desciption) external {
-        require(prePrints[_fileCID].submitAddress != address(0), 'The cid of file has existed');
+        require(prePrints[_fileCID].submitAddress == address(0), 'The cid of file has existed');
 
         uint _submitTime = block.timestamp;
         address _submitAddress = msg.sender;
