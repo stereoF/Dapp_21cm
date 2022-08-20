@@ -11,18 +11,18 @@ contract PrePrintTrack {
 
     struct PrePrintInfo {
         address submitAddress; 
-        uint submitTime; 
+        string keyInfo;
     }
 
     mapping (string => PrePrintInfo) public prePrints;
 
-    event Submit(string _fileCID, address indexed _submitAddress, uint indexed _submitTime, string _desciption);
+    event Submit(string _fileCID, string keyInfo, address indexed _submitAddress, uint indexed _submitTime, string _desciption);
 
     constructor() payable {
         owner = payable(msg.sender);
     }
 
-    function submit(string memory _fileCID, string memory _desciption) external {
+    function submit(string memory _fileCID, string memory _keyInfo, string memory _desciption) external {
         require(prePrints[_fileCID].submitAddress == address(0), 'The cid of file has existed');
 
         uint _submitTime = block.timestamp;
@@ -31,9 +31,9 @@ contract PrePrintTrack {
         prePrintCIDs.push(_fileCID);
         prePrints[_fileCID] = PrePrintInfo({
             submitAddress: _submitAddress,
-            submitTime: _submitTime
+            keyInfo: _keyInfo
         });
 
-        emit Submit(_fileCID, _submitAddress, _submitTime, _desciption);
+        emit Submit(_fileCID, _keyInfo, _submitAddress, _submitTime, _desciption);
     }
 }

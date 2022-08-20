@@ -1,5 +1,6 @@
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { expect } = require("chai");
+const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("PrePrintTrack contract", function () {
 
@@ -23,14 +24,31 @@ describe("PrePrintTrack contract", function () {
 
   describe("Transaction", function(){
     it("should submit the paper's CID", async function(){
-      const { hardhatPrePrintTrack, owner } = await loadFixture(
+      const { hardhatPrePrintTrack } = await loadFixture(
         deployPrePrintTrackFixture
       );
       
       const paperCID = "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo";
-      await hardhatPrePrintTrack.submit(paperCID, 'test description');
+      const keyInfo = 'test key information'
+      await hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description');
       expect(await hardhatPrePrintTrack.prePrintCIDs(0)).to.equal(paperCID)
 
+    });
+
+    it("should emit Submit events", async function() {
+      const { hardhatPrePrintTrack, owner } = await loadFixture(
+        deployPrePrintTrackFixture
+      );
+
+      const paperCID = "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo";
+      const keyInfo = 'test key information'
+
+      const blockTime = Date.now() + 15;
+      await time.setNextBlockTimestamp(blockTime);
+
+      await expect(hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description'))
+      .to.emit(hardhatPrePrintTrack, "Submit")
+      .withArgs(paperCID, keyInfo, owner.address, blockTime, 'test description');
     });
   });
 });
