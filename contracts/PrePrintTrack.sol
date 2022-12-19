@@ -23,7 +23,7 @@ contract PrePrintTrack {
         owner = payable(msg.sender);
     }
 
-    function submit(string memory _fileCID, string memory _keyInfo, string memory _desciption) external {
+    function submit(string memory _fileCID, string memory _keyInfo, string memory _description) external {
         require(prePrints[_fileCID].submitAddress == address(0), 'The cid of file has existed');
 
         uint _submitTime = block.timestamp;
@@ -35,6 +35,6 @@ contract PrePrintTrack {
             keyInfo: _keyInfo
         });
 
-        emit Submit(_fileCID, _keyInfo, _submitAddress, _submitTime, _desciption);
+        emit Submit(_fileCID, _keyInfo, _submitAddress, _submitTime, _description);
     }
 }
