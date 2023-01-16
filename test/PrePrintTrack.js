@@ -30,12 +30,15 @@ describe("PrePrintTrack contract", function () {
       
       const paperCID = "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo";
       const keyInfo = 'test key information'
+      const blockTime = Date.now() + 15;
+      await time.setNextBlockTimestamp(blockTime);
       await hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description');
 
       expect(await hardhatPrePrintTrack.prePrintCIDs(0)).to.equal(paperCID);
 
       let prePrintInfo = await hardhatPrePrintTrack.prePrints(paperCID);
       expect(prePrintInfo.submitAddress).to.equal(owner.address);
+      expect(prePrintInfo.submitTime).to.equal(blockTime);
       expect(prePrintInfo.keyInfo).to.equal(keyInfo);
 
     });

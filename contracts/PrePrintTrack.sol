@@ -12,6 +12,7 @@ contract PrePrintTrack {
 
     struct PrePrintInfo {
         address submitAddress; 
+        uint submitTime;
         string keyInfo;
     }
 
@@ -32,6 +33,7 @@ contract PrePrintTrack {
         prePrintCIDs.push(_fileCID);
         prePrints[_fileCID] = PrePrintInfo({
             submitAddress: _submitAddress,
+            submitTime: _submitTime,
             keyInfo: _keyInfo
         });
 
