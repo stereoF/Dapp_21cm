@@ -89,11 +89,11 @@ contract PrePrintTrack {
         return address(this).balance;
     }
 
-    function getPrePrintInfoByCid(string memory cid)
-        public
-        view
-        returns (PrePrintInfo memory)
-    {
-        return prePrints[cid];
-    }
+    // function getPrePrintInfoByCid(string memory cid)
+    //     public
+    //     view
+    //     returns (PrePrintInfo memory)
+    // {
+    //     return prePrints[cid];
+    // }
 }

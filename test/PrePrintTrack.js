@@ -1,15 +1,16 @@
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { expect } = require("chai");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
+const { ethers } = require("hardhat");
 
 describe("PrePrintTrack contract", function () {
 
   async function deployPrePrintTrackFixture() {
-    const [owner] = await ethers.getSigners();
+    const [owner, address2] = await ethers.getSigners();
     const PrePrintTrack = await ethers.getContractFactory("PrePrintTrack");
     const hardhatPrePrintTrack = await PrePrintTrack.deploy();
 
-    return { hardhatPrePrintTrack, owner }
+    return { hardhatPrePrintTrack, owner, address2 }
   }
 
   describe("Deployment", function() {
@@ -68,7 +69,22 @@ describe("PrePrintTrack contract", function () {
 
       await expect(
         hardhatPrePrintTrack.submit(paperCID, keyInfo, '2nd submit')
-      ).to.be.revertedWith("The cid of file has existed");
+      ).to.be.revertedWith("The cid of file has existed!");
+
+    });
+
+    it("the balance should be equal to the amount transfer to the contract", async function() {
+      const { hardhatPrePrintTrack, address2 } = await loadFixture(
+        deployPrePrintTrackFixture
+      );
+
+      tx = {
+        to: hardhatPrePrintTrack.address,
+        value: ethers.utils.parseEther('10', 'ether')
+      };
+      const transaction = await address2.sendTransaction(tx);
+
+      expect(await hardhatPrePrintTrack.getBalance()).to.equal(ethers.utils.parseEther('10', 'ether'));
 
     });
 
