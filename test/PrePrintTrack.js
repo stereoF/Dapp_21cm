@@ -23,6 +23,18 @@ describe("PrePrintTrack contract", function () {
     });
   });
 
+  describe("Management", function() {
+    it("transfer the ownership", async function () {
+      const { hardhatPrePrintTrack, owner, address2 } = await loadFixture(
+        deployPrePrintTrackFixture
+      );
+
+      await hardhatPrePrintTrack.transferOwnership(address2.address);
+      expect(address2.address).to.equal(await hardhatPrePrintTrack.owner());
+
+    });
+  });
+
   describe("Transaction", function(){
     it("should submit the paper's CID", async function(){
       const { hardhatPrePrintTrack, owner } = await loadFixture(
