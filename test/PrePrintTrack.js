@@ -100,5 +100,27 @@ describe("PrePrintTrack contract", function () {
 
     });
 
+    it("the balance of the contract and owner after withdraw", async function() {
+      const { hardhatPrePrintTrack, owner, address2 } = await loadFixture(
+        deployPrePrintTrackFixture
+      );
+
+      tx = {
+        to: hardhatPrePrintTrack.address,
+        value: ethers.utils.parseEther('10', 'ether')
+      };
+      const transaction = await address2.sendTransaction(tx);
+
+      initialBalance = await owner.getBalance()
+      // let's do a withdrawal
+      const tx2 = await hardhatPrePrintTrack.connect(owner).withdraw();
+      // Let's calculate the gas spent
+      const receipt = await tx2.wait()
+      const gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+
+      expect(await owner.getBalance()).to.eq(ethers.utils.parseEther('10', 'ether').add(initialBalance).sub(gasSpent))
+
+    });
+
   });
 });
