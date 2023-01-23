@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-abstract contract DeSciRoleModel {
+contract DeSciRoleModel {
     address payable private _owner;
     address[] private _administrators;
     address[] private _editors;
@@ -25,6 +25,10 @@ abstract contract DeSciRoleModel {
      */
     function owner() public view returns (address payable) {
         return _owner;
+    }
+
+    function admins() public view returns (address[] memory) {
+        return _administrators;
     }
 
     function editors() public view returns (address[] memory) {
@@ -94,6 +98,18 @@ abstract contract DeSciRoleModel {
 
     function pushReviewer(address payable reviewer) internal onlyAdmin {
         _reviewers.push(reviewer);
+    }
+
+    function pushEditors(address[] memory editorAddrs) internal onlyAdmin {
+        for (uint256 i = 0; i < editorAddrs.length; i++) {
+            _editors.push(payable(editorAddrs[i]));
+        }
+    }
+
+    function pushReviewers(address[] memory reviewerAddrs) internal onlyAdmin {
+        for (uint256 i = 0; i < reviewerAddrs.length; i++) {
+            _reviewers.push(payable(reviewerAddrs[i]));
+        }
     }
 
     function removeEditor(address payable editor) internal onlyAdmin {

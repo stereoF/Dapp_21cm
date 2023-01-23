@@ -88,12 +88,4 @@ contract PrePrintTrack {
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }
-
-    // function getPrePrintInfoByCid(string memory cid)
-    //     public
-    //     view
-    //     returns (PrePrintInfo memory)
-    // {
-    //     return prePrints[cid];
-    // }
 }
