@@ -14,7 +14,8 @@ subtask(
       .filter(solidityFilePath => {
         const relativePath = path.relative(config.paths.sources, solidityFilePath)
 
-        return relativePath !== "DeSciPrintFactory.sol";
+        // return relativePath !== "PrePrintTrack.sol";
+        return ["PrePrintTrack.sol", "DeSciRoleModel.sol"].includes(relativePath)
       })
   }
 );
