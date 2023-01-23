@@ -3,9 +3,10 @@ pragma solidity ^0.8.9;
 
 contract DeSciRoleModel {
     address payable private _owner;
-    address[] private _administrators;
     address[] private _editors;
     address[] private _reviewers;
+    mapping(address => uint256) private _editorsIndex;
+    mapping(address => uint256) private _reviewersIndex;
     event OwnershipTransferred(
         address indexed previousOwner,
         address indexed newOwner
@@ -25,10 +26,6 @@ contract DeSciRoleModel {
      */
     function owner() public view returns (address payable) {
         return _owner;
-    }
-
-    function admins() public view returns (address[] memory) {
-        return _administrators;
     }
 
     function editors() public view returns (address[] memory) {
@@ -72,76 +69,6 @@ contract DeSciRoleModel {
         _owner = newOwner;
     }
 
-    function assignAdministrator(address payable admin) public onlyOwner {
-        _administrators.push(admin);
-    }
-
-    modifier onlyAdmin() {
-        require(isAdmin());
-        _;
-    }
-
-    function isAdmin() public view returns (bool) {
-        bool ret = false;
-        for (uint256 i = 0; i < _administrators.length; i++) {
-            if (_administrators[i] == msg.sender) {
-                ret = true;
-                break;
-            }
-        }
-        return ret;
-    }
-
-    function pushEditor(address payable editor) internal onlyAdmin {
-        _editors.push(editor);
-    }
-
-    function pushReviewer(address payable reviewer) internal onlyAdmin {
-        _reviewers.push(reviewer);
-    }
-
-    function pushEditors(address[] memory editorAddrs) internal onlyAdmin {
-        for (uint256 i = 0; i < editorAddrs.length; i++) {
-            _editors.push(payable(editorAddrs[i]));
-        }
-    }
-
-    function pushReviewers(address[] memory reviewerAddrs) internal onlyAdmin {
-        for (uint256 i = 0; i < reviewerAddrs.length; i++) {
-            _reviewers.push(payable(reviewerAddrs[i]));
-        }
-    }
-
-    function removeEditor(address payable editor) internal onlyAdmin {
-        bool ret = false;
-        uint256 index;
-        for (uint256 i = 0; i < _editors.length; i++) {
-            if (_editors[i] == editor) {
-                ret = true;
-                index = i;
-                break;
-            }
-        }
-        if (ret) {
-            removeElement(_editors, index);
-        }
-    }
-
-    function removeReviewer(address payable reviewer) internal onlyAdmin {
-        bool ret = false;
-        uint256 index;
-        for (uint256 i = 0; i < _reviewers.length; i++) {
-            if (_reviewers[i] == reviewer) {
-                ret = true;
-                index = i;
-                break;
-            }
-        }
-        if (ret) {
-            removeElement(_reviewers, index);
-        }
-    }
-
     modifier onlyEditor() {
         require(isEditor());
         _;
@@ -156,6 +83,28 @@ contract DeSciRoleModel {
             }
         }
         return ret;
+    }
+
+    function pushEditors(address[] memory editorAddrs) public onlyOwner {
+        address addr;
+        uint256 index;
+        for (uint256 i = 0; i < editorAddrs.length; i++) {
+            addr = payable(editorAddrs[i]);
+            _editors.push(addr);
+            index = _editors.length;
+            _editorsIndex[addr] = index;
+        }
+    }
+
+    function removeEditor(address[] memory editorAddrs) public onlyOwner {
+        for (uint256 i = 0; i < editorAddrs.length; i++) {
+            uint256 index = _editorsIndex[editorAddrs[i]];
+            if (index > 0) {
+                _editors[index - 1] = _editors[_editors.length - 1];
+                _editors.pop();
+                _editorsIndex[editorAddrs[i]] = 0;
+            }
+        }
     }
 
     modifier onlyReviewer() {
@@ -174,8 +123,25 @@ contract DeSciRoleModel {
         return ret;
     }
 
-    function removeElement(address[] storage arr, uint256 index) internal {
-        arr[index] = arr[arr.length - 1];
-        arr.pop();
+    function pushReviewers(address[] memory reviewerAddrs) internal onlyOwner {
+        address addr;
+        uint256 index;
+        for (uint256 i = 0; i < reviewerAddrs.length; i++) {
+            addr = payable(reviewerAddrs[i]);
+            _reviewers.push(addr);
+            index = _reviewers.length;
+            _reviewersIndex[addr] = index;
+        }
+    }
+
+    function removeReviewer(address[] memory reviewerAddrs) internal onlyOwner {
+        for (uint256 i = 0; i < reviewerAddrs.length; i++) {
+            uint256 index = _reviewersIndex[reviewerAddrs[i]];
+            if (index > 0) {
+                _reviewers[index - 1] = _reviewers[_reviewers.length - 1];
+                _reviewers.pop();
+                _reviewersIndex[reviewerAddrs[i]] = 0;
+            }
+        }
     }
 }
