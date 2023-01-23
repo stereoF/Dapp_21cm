@@ -6,11 +6,11 @@ const { ethers } = require("hardhat");
 describe("DeSciRoleModel contract", function () {
 
   async function deployDeSciRoleModelFixture() {
-    const [owner, address2, admin, editor, reviewer] = await ethers.getSigners();
+    const [owner, address2, editor1, editor2, reviewer] = await ethers.getSigners();
     const DeSciRoleModel = await ethers.getContractFactory("DeSciRoleModel");
     const hardhatDeSciRoleModel = await DeSciRoleModel.deploy();
 
-    return { hardhatDeSciRoleModel, owner, address2, admin, editor, reviewer }
+    return { hardhatDeSciRoleModel, owner, address2, editor1, editor2, reviewer }
   }
 
   describe("Deployment", function() {
@@ -34,15 +34,16 @@ describe("DeSciRoleModel contract", function () {
 
     });
 
-    it("assign the admin", async function () {
-        const { hardhatDeSciRoleModel, admin } = await loadFixture(
+    it("assign the editors", async function () {
+        const { hardhatDeSciRoleModel, editor1, editor2 } = await loadFixture(
           deployDeSciRoleModelFixture
         );
-  
-        await hardhatDeSciRoleModel.assignAdministrator(admin.address);
-        expect(admin.address).to.equal((await hardhatDeSciRoleModel.admins())[0]);
-        expect(await hardhatDeSciRoleModel.connect(admin).isAdmin()).to.equal(true);
-  
+
+        await hardhatDeSciRoleModel.pushEditors([editor1.address, editor2.address]);
+        expect(editor1.address).to.equal((await hardhatDeSciRoleModel.editors())[0]);
+        expect(editor2.address).to.equal((await hardhatDeSciRoleModel.editors())[1]);
+        expect(await hardhatDeSciRoleModel.connect(editor1).isEditor()).to.equal(true);
+        expect(await hardhatDeSciRoleModel.connect(editor2).isEditor()).to.equal(true);
       });
   });
 
