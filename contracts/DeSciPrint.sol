@@ -51,7 +51,7 @@ contract DeSciPrint is DeSciRoleModel {
             DeSciPrints[_fileCID].submitAddress == address(0),
             "File cid exist!"
         );
-        require(msg.value >= minGasCost, "Not enough amount!");
+        require(msg.value >= minGasCost, "Not enough gas!");
         require(_amount > 0 && msg.value > _amount, "Not enough amount!");
         uint256 _submitTime = block.timestamp;
         address _submitAddress = msg.sender;

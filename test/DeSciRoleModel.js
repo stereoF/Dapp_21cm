@@ -6,11 +6,11 @@ const { ethers } = require("hardhat");
 describe("DeSciRoleModel contract", function () {
 
   async function deployDeSciRoleModelFixture() {
-    const [owner, address2, editor1, editor2, reviewer] = await ethers.getSigners();
+    const [owner, address2, editor1, editor2, reviewer1, reviewer2] = await ethers.getSigners();
     const DeSciRoleModel = await ethers.getContractFactory("DeSciRoleModel");
     const hardhatDeSciRoleModel = await DeSciRoleModel.deploy();
 
-    return { hardhatDeSciRoleModel, owner, address2, editor1, editor2, reviewer }
+    return { hardhatDeSciRoleModel, owner, address2, editor1, editor2, reviewer1, reviewer2 }
   }
 
   describe("Deployment", function() {
@@ -45,6 +45,7 @@ describe("DeSciRoleModel contract", function () {
         expect(await hardhatDeSciRoleModel.connect(editor1).isEditor()).to.equal(true);
         expect(await hardhatDeSciRoleModel.connect(editor2).isEditor()).to.equal(true);
       });
+
   });
 
 });
