@@ -44,7 +44,11 @@ describe("DeSciPrint contract", function () {
             
             await hardhatDeSciPrint.connect(address2).submitForReview(paperCID, keyInfo, amount, { value: amount.add(minGasCost) });
             expect(await hardhatDeSciPrint.DeSciFileCIDs(0)).to.equal(paperCID);
+            expect(await hardhatDeSciPrint.getBalance()).to.equal(amount.add(minGasCost));
 
+            printInfo = await hardhatDeSciPrint.DeSciPrints(paperCID);
+            expect(printInfo.submitAddress).to.eq(address2.address)
+            expect(printInfo.keyInfo).to.eq(keyInfo)
         });
 
         

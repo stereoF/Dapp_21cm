@@ -46,6 +46,48 @@ describe("DeSciRoleModel contract", function () {
         expect(await hardhatDeSciRoleModel.connect(editor2).isEditor()).to.equal(true);
       });
 
+    it("remove editors", async function () {
+        const { hardhatDeSciRoleModel, editor1, editor2, address2 } = await loadFixture(
+          deployDeSciRoleModelFixture
+        );
+
+        await hardhatDeSciRoleModel.pushEditors([editor1.address, editor2.address, address2.address]);
+        expect(await hardhatDeSciRoleModel.connect(editor1).isEditor()).to.equal(true);
+        expect(await hardhatDeSciRoleModel.connect(editor2).isEditor()).to.equal(true);
+        expect(await hardhatDeSciRoleModel.connect(address2).isEditor()).to.equal(true);
+
+        await hardhatDeSciRoleModel.removeEditor([editor1.address, editor2.address]);
+        expect(await hardhatDeSciRoleModel.connect(editor1).isEditor()).to.equal(false);
+        expect(await hardhatDeSciRoleModel.connect(editor2).isEditor()).to.equal(false);
+        expect(await hardhatDeSciRoleModel.connect(address2).isEditor()).to.equal(true);
+    });
+
+    it("assign the reviewers", async function () {
+      const { hardhatDeSciRoleModel, reviewer1, reviewer2 } = await loadFixture(
+        deployDeSciRoleModelFixture
+      );
+
+      await hardhatDeSciRoleModel.pushReviewers([reviewer1.address, reviewer2.address]);
+      expect(await hardhatDeSciRoleModel.connect(reviewer1).isReviewer()).to.equal(true);
+      expect(await hardhatDeSciRoleModel.connect(reviewer2).isReviewer()).to.equal(true);
+    });
+
+    it("remove reviewers", async function () {
+      const { hardhatDeSciRoleModel, reviewer1, reviewer2, address2 } = await loadFixture(
+        deployDeSciRoleModelFixture
+      );
+
+      await hardhatDeSciRoleModel.pushReviewers([reviewer1.address, reviewer2.address, address2.address]);
+      expect(await hardhatDeSciRoleModel.connect(reviewer1).isReviewer()).to.equal(true);
+      expect(await hardhatDeSciRoleModel.connect(reviewer2).isReviewer()).to.equal(true);
+      expect(await hardhatDeSciRoleModel.connect(address2).isReviewer()).to.equal(true);
+
+      await hardhatDeSciRoleModel.removeReviewer([reviewer1.address, reviewer2.address]);
+      expect(await hardhatDeSciRoleModel.connect(reviewer1).isReviewer()).to.equal(false);
+      expect(await hardhatDeSciRoleModel.connect(reviewer2).isReviewer()).to.equal(false);
+      expect(await hardhatDeSciRoleModel.connect(address2).isReviewer()).to.equal(true);
+    });
+
   });
 
 });

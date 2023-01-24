@@ -123,7 +123,7 @@ contract DeSciRoleModel {
         return ret;
     }
 
-    function pushReviewers(address[] memory reviewerAddrs) internal onlyOwner {
+    function pushReviewers(address[] memory reviewerAddrs) public onlyOwner {
         address addr;
         uint256 index;
         for (uint256 i = 0; i < reviewerAddrs.length; i++) {
@@ -134,7 +134,7 @@ contract DeSciRoleModel {
         }
     }
 
-    function removeReviewer(address[] memory reviewerAddrs) internal onlyOwner {
+    function removeReviewer(address[] memory reviewerAddrs) public onlyOwner {
         for (uint256 i = 0; i < reviewerAddrs.length; i++) {
             uint256 index = _reviewersIndex[reviewerAddrs[i]];
             if (index > 0) {
