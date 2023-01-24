@@ -37,10 +37,12 @@ describe("DeSciPrint contract", function () {
             );
 
             const paperCID = "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo";
-            const keyInfo = 'test key information'
-            const amount = ethers.utils.parseEther('1.5', 'ether')
+            const keyInfo = 'test key information';
+            const amount = ethers.utils.parseEther('1.5', 'ether');
+
+            const minGasCost = await hardhatDeSciPrint.minGasCost();
             
-            await hardhatDeSciPrint.connect(address2).submitForReview(paperCID, keyInfo, amount, { value: ethers.utils.parseUnits("10", "ether") });
+            await hardhatDeSciPrint.connect(address2).submitForReview(paperCID, keyInfo, amount, { value: amount.add(minGasCost) });
             expect(await hardhatDeSciPrint.DeSciFileCIDs(0)).to.equal(paperCID);
 
         });
