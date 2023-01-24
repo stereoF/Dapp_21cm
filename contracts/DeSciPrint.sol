@@ -3,7 +3,7 @@ pragma solidity ^0.8.9;
 import "./DeSciRoleModel.sol";
 
 contract DeSciPrint is DeSciRoleModel {
-    uint256 private minGasCost = 0.0001 ether;
+    uint256 public minGasCost = 0.0001 ether;
 
     function setMinGasCost(uint256 amount) public onlyOwner {
         minGasCost = amount;

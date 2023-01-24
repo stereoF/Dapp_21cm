@@ -10,8 +10,25 @@ describe("DeSciPrint contract", function () {
         const DeSciPrint = await ethers.getContractFactory("DeSciPrint");
         const hardhatDeSciPrint = await DeSciPrint.deploy();
     
-        return { hardhatDeSciPrint, owner, address2, editor1, editor2, reviewer1, reviewer2 }
-      }
+        return { hardhatDeSciPrint, owner, address2, editor1, editor2, reviewer1, reviewer2 };
+      };
+
+
+    describe("Management", function() {
+        it("Set minGasCost", async function () {
+            const { hardhatDeSciPrint } = await loadFixture(
+            deployDeSciPrintFixture
+            );
+
+            const minGasCost = ethers.utils.parseEther('0.2', 'ether');
+            await hardhatDeSciPrint.setMinGasCost(minGasCost);
+            
+            expect(await hardhatDeSciPrint.minGasCost()).to.equal(ethers.utils.parseEther('0.2', 'ether'));
+
+        });
+
+    });
+
 
     describe("Peer Review", function() {
         it("Submit", async function () {
