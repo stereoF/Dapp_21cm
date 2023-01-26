@@ -21,7 +21,7 @@ contract DeSciPrint is DeSciRoleModel {
 
     struct ReviewInfo {
         address fromAddr;
-        address toAddr;
+        // address toAddr;
         string remark;
         uint256 rmkTime;
     }
@@ -44,11 +44,12 @@ contract DeSciPrint is DeSciRoleModel {
         uint8 passCnt;
         // uint256 status;
         ProcessStatus processStatus;
-        ReviewInfo[] reviewInfos;
+        // ReviewInfo[] reviewInfos;
     }
 
     mapping(string => PrintInfo) public deSciPrints;
     mapping(string => ProcessInfo) public deSciProcess;
+    mapping(string => ReviewInfo) public deSciReviews;
     string[] public deSciFileCIDs;
     // string[] public printsInProcess;
     // string[] public printsPublished;
@@ -80,7 +81,7 @@ contract DeSciPrint is DeSciRoleModel {
         deSciFileCIDs.push(_fileCID);
     }
 
-    function printsPool(ProcessStatus _status) private view returns (string[] memory printsPool_) {
+    function printsPool(ProcessStatus _status) external view returns (string[] memory printsPool_) {
         uint256 resultCount;
 
         for (uint256 i = 0; i < deSciFileCIDs.length; i++) {
@@ -101,8 +102,46 @@ contract DeSciPrint is DeSciRoleModel {
         return printsPool_; // step 4 - return
     }
 
-    function editorPrintsPool() public view onlyEditor returns (string[] memory) {
-        return printsPool(ProcessStatus.Pending);
+    // function editorPrintsPool() public view onlyEditor returns (string[] memory) {
+    //     return printsPool(ProcessStatus.Pending);
+    // }
+
+    function reviewerAssign(string memory fileCID, address[] memory reviewers_)
+        public
+        onlyEditor
+    {
+        require(reviewers_.length >= 2 && reviewers_.length <= 3);
+        ProcessInfo storage processInfo = deSciProcess[fileCID];
+        require(processInfo.processStatus == ProcessStatus.Pending);
+        processInfo.editor = msg.sender;
+        processInfo.reviewers = reviewers_;
+        // for (uint i = 0; i < reviewers_.length; i++) {
+        //     processInfo.reviewers.push(reviewers_[i]);
+        // }
+        processInfo.processStatus = ProcessStatus.ReviewerAssigned;
+    }
+
+    function editorReject(string memory fileCID, string memory remark_)
+        public
+        onlyEditor
+    {
+        ProcessInfo storage processInfo = deSciProcess[fileCID];
+        processInfo.editor = msg.sender;
+        processInfo.processStatus = ProcessStatus.EditorRejected;
+
+        ReviewInfo storage reviewInfo = deSciReviews[fileCID];
+        reviewInfo.fromAddr = msg.sender;
+        reviewInfo.remark = remark_;
+        reviewInfo.rmkTime = block.timestamp;
+
+        PrintInfo storage printInfo = deSciPrints[fileCID];
+        printInfo.reviewerStatus = ReviewerStatus.Reject;
+
+        // require(processInfo.editor == msg.sender);
+        // if (!isAccept) {
+        //     processInfo.editor = address(0);
+        //     processInfo.status = uint256(0); // 编辑拒绝
+        // }
     }
 
     // function reviewPrint(
@@ -174,29 +213,6 @@ contract DeSciPrint is DeSciRoleModel {
     //     require(processInfo.status == 0);
     //     processInfo.editor = editor;
     //     processInfo.status = uint256(1); // 已分配编辑
-    // }
-
-    // function editorConfirm(string memory fileCID, bool isAccept)
-    //     public
-    //     onlyEditor
-    // {
-    //     ProcessInfo storage processInfo = DeSciProcess[fileCID];
-    //     require(processInfo.editor == msg.sender);
-    //     if (!isAccept) {
-    //         processInfo.editor = address(0);
-    //         processInfo.status = uint256(0); // 编辑拒绝
-    //     }
-    // }
-
-    // function reviewerAssign(string memory fileCID, address[] memory reviewers)
-    //     public
-    //     onlyEditor
-    // {
-    //     require(reviewers.length >= 2 && reviewers.length <= 3);
-    //     ProcessInfo storage processInfo = DeSciProcess[fileCID];
-    //     require(processInfo.editor == msg.sender);
-    //     processInfo.reviewers = reviewers;
-    //     processInfo.status = uint256(2); // 已分配审稿人
     // }
 
     // function reviewerConfirm(string memory fileCID, bool isAccept)
