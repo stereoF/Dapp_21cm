@@ -4,9 +4,9 @@ pragma solidity ^0.8.9;
 contract DeSciRoleModel {
     address payable private _owner;
     address[] private _editors;
-    address[] private _reviewers;
+    // address[] private _reviewers;
     mapping(address => uint256) private _editorsIndex;
-    mapping(address => uint256) private _reviewersIndex;
+    // mapping(address => uint256) private _reviewersIndex;
     event OwnershipTransferred(
         address indexed previousOwner,
         address indexed newOwner
@@ -90,6 +90,7 @@ contract DeSciRoleModel {
         uint256 index;
         for (uint256 i = 0; i < editorAddrs.length; i++) {
             addr = payable(editorAddrs[i]);
+            require(_editorsIndex[addr] == 0, "Duplicate editor");
             _editors.push(addr);
             index = _editors.length;
             _editorsIndex[addr] = index;

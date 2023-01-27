@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 import "./DeSciRoleModel.sol";
+// import "hardhat/console.sol";
 
 contract DeSciPrint is DeSciRoleModel {
     uint256 public minGasCost = 0.0001 ether;
@@ -20,8 +21,6 @@ contract DeSciPrint is DeSciRoleModel {
     mapping(address => uint256) tokenBalance;
 
     struct ReviewInfo {
-        // address fromAddr;
-        // address toAddr;
         string comment;
         uint256 commentTime;
         ReviewerStatus reviewerStatus;
@@ -30,32 +29,23 @@ contract DeSciPrint is DeSciRoleModel {
     struct PrintInfo {
         address submitAddress;
         uint256 submitTime;
-        // uint256 publishTime;
         string keyInfo;
-        // string[] fileCIDs;
         string prevCID;
         string nextCID;
-        // ReviewerStatus reviewerStatus;
     }
 
     struct ProcessInfo {
         uint256 donate;
         address editor;
         address[] reviewers;
-        // uint8 passCnt;
-        // uint256 status;
         ProcessStatus processStatus;
-        // ReviewInfo[] reviewInfos;
     }
 
     mapping(string => PrintInfo) public deSciPrints;
     mapping(string => ProcessInfo) public deSciProcess;
-    // mapping(string => ReviewInfo[]) private _deSciReviews;
     mapping(string => mapping(address => ReviewInfo)) public deSciReviews;
+    mapping(string => mapping(address => uint8)) public reviewerIndex;
     string[] public deSciFileCIDs;
-    // string[] public printsInProcess;
-    // string[] public printsPublished;
-    // string[] public PrintsRejected;
 
     function submitForReview(
         string memory _fileCID,
@@ -75,11 +65,7 @@ contract DeSciPrint is DeSciRoleModel {
         print.submitAddress = _submitAddress;
         print.submitTime = _submitTime;
         print.keyInfo = _keyInfo;
-        // print.reviewerStatus = ReviewerStatus.Submit;
-        // print.fileCIDs.push(_fileCID);
-        // process.status = 0;
         process.donate = _amount;
-        // DeSciFileCIDs.push(_fileCID);
         deSciFileCIDs.push(_fileCID);
     }
 
@@ -104,22 +90,32 @@ contract DeSciPrint is DeSciRoleModel {
         return printsPool_; // step 4 - return
     }
 
-    // function editorPrintsPool() public view onlyEditor returns (string[] memory) {
-    //     return printsPool(ProcessStatus.Pending);
-    // }
 
     function reviewerAssign(string memory fileCID, address[] memory reviewers_)
         public
         onlyEditor
     {
-        require(reviewers_.length >= 2 && reviewers_.length <= 3);
         ProcessInfo storage processInfo = deSciProcess[fileCID];
-        require(processInfo.processStatus == ProcessStatus.Pending);
-        processInfo.editor = msg.sender;
-        processInfo.reviewers = reviewers_;
-        // for (uint i = 0; i < reviewers_.length; i++) {
-        //     processInfo.reviewers.push(reviewers_[i]);
-        // }
+        require(processInfo.editor == msg.sender || processInfo.editor == address(0), "Can't be processed by different editor");
+        require(
+            processInfo.processStatus == ProcessStatus.Pending || processInfo.processStatus == ProcessStatus.AppendReviewer,
+            "Can only assign to pending or append-need paper"
+            );
+
+        if (processInfo.editor == address(0)) {
+            processInfo.editor = msg.sender;
+        }
+
+        address addr;
+        uint8 index;
+        for (uint8 i = 0; i < reviewers_.length; i++) {
+            addr = payable(reviewers_[i]);
+            require(reviewerIndex[fileCID][addr] == 0, "Duplicate reviewer");
+            processInfo.reviewers.push(addr);
+            index = uint8(processInfo.reviewers.length);
+            reviewerIndex[fileCID][addr] = index;
+        }
+        require(processInfo.reviewers.length >= 2 && processInfo.reviewers.length <= 3, 'Need 2 or 3 reviewers');
         processInfo.processStatus = ProcessStatus.ReviewerAssigned;
     }
 
@@ -143,51 +139,37 @@ contract DeSciPrint is DeSciRoleModel {
         reviewInfo.comment = comment_;
         reviewInfo.commentTime = block.timestamp;
         reviewInfo.reviewerStatus = ReviewerStatus.Reject;
-
-        // PrintInfo storage printInfo = deSciPrints[fileCID];
-        // printInfo.reviewerStatus = ReviewerStatus.Reject;
-
-        // require(processInfo.editor == msg.sender);
-        // if (!isAccept) {
-        //     processInfo.editor = address(0);
-        //     processInfo.status = uint256(0); // 编辑拒绝
-        // }
     }
 
-    // function getPapersByReviewer() external view onlyReviewer returns(string[] memory papers) {
-    //     string[] memory printsInReview = printsPool(ProcessStatus.ReviewerAssigned);
-    //     for (uint256 i = 0; i < printsInReview.length; i++) {
-    //         string memory fileCID = printsInReview[i];
-    //         address[] memory reviewers = deSciProcess[fileCID].reviewers;
-    //         for (uint j =0; i < reviewers.length; j++) {
-    //             if (reviewers[j] == msg.sender) {
-    //                 papers.push(fileCID);
-    //             }
-    //         }
-    //     }
+    function _isReviewer(string memory fileCID, address reviewer) public view returns (bool) {
+        ProcessInfo storage process = deSciProcess[fileCID];
+        bool canReview = false;
+        address[] memory reviewers = process.reviewers;
+        for (uint256 i = 0; i < reviewers.length; i++) {
+            if (reviewers[i] == reviewer) {
+                canReview = true;
+                break;
+            }
+        }
+        return canReview;
+    }
 
-    // }
+    modifier onlyReviewer(string memory fileCID) {
+        require(_isReviewer(fileCID, msg.sender), "You have no qualification to review this paper!");
+        _;
+    }
 
     function reviewPrint(
         string memory fileCID,
         string memory reviewCID,
         ReviewerStatus status
-    ) public {
+    ) public onlyReviewer(fileCID) {
         require(status != ReviewerStatus.Submit, "Must change the ReviewerStatus!");
         ReviewInfo storage reviewInfo = deSciReviews[fileCID][msg.sender];
         require(reviewInfo.reviewerStatus == ReviewerStatus.Submit, "You have submitted the comments!");
-        // PrintInfo storage print = deSciPrints[fileCID];
 
         ProcessInfo storage process = deSciProcess[fileCID];
-        bool canReview = false;
         address[] memory reviewers = process.reviewers;
-        for (uint256 i = 0; i < reviewers.length; i++) {
-            if (reviewers[i] == msg.sender) {
-                canReview = true;
-                break;
-            }
-        }
-        require(canReview, "You have no qualification to review this paper!");
 
         reviewInfo.comment = reviewCID;
         reviewInfo.commentTime = block.timestamp;
@@ -217,25 +199,6 @@ contract DeSciPrint is DeSciRoleModel {
         if (reviewers.length == 2 && rejectCnt == 1) {
             process.processStatus = ProcessStatus.AppendReviewer;
         }
-
-        // // process.passCnt += isPass;
-        // if (process.passCnt >= 2) {
-        //     process.status = 3; // 已发布
-        //     print.publishTime = block.timestamp;
-        //     for (uint8 i = 0; i < process.reviewers.length; i++) {
-        //         tokenBalance[process.reviewers[i]] +=
-        //             process.donate /
-        //             (process.reviewers.length + 1);
-        //     }
-        // }
-        // process.reviewInfos.push(
-        //     ReviewInfo({
-        //         remark: reviewCID,
-        //         rmkTime: block.timestamp,
-        //         fromAddr: msg.sender,
-        //         toAddr: print.submitAddress
-        //     })
-        // );
     }
 
     // function replyReviewInfo(
