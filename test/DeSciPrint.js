@@ -45,9 +45,11 @@ describe("DeSciPrint contract", function () {
     };
 
     async function assignReviewersFixture() {
-        const { hardhatDeSciPrint, paper1, paper2, editor1, editor2, reviewer1, reviewer2, reviewer3 } = await loadFixture(
+        const { hardhatDeSciPrint, owner, paper1, paper2, editor1, editor2, reviewer1, reviewer2, reviewer3 } = await loadFixture(
             submitPrintsFixture
         );
+
+        await hardhatDeSciPrint.connect(owner).pushReviewers([reviewer1.address, reviewer2.address, reviewer3.address]);
 
         await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, 
             [reviewer1.address, reviewer2.address, reviewer3.address]);
@@ -97,7 +99,7 @@ describe("DeSciPrint contract", function () {
             expect(printInfo.submitAddress).to.eq(address2.address);
             expect(printInfo.keyInfo).to.eq(paper2.keyInfo);
             expect(printInfo.submitTime).to.eq(blockTime);
-            expect(printInfo.reviewerStatus).to.eq(0);
+            // expect(printInfo.reviewerStatus).to.eq(0);
 
             processInfo = await hardhatDeSciPrint.deSciProcess(paper2.paperCID);
             expect(processInfo.donate).to.eq(paper2.amount);
@@ -114,6 +116,34 @@ describe("DeSciPrint contract", function () {
 
         });
 
+        it("Editor reject the paper", async function () {
+            const { hardhatDeSciPrint, editor1 } = await loadFixture(
+                submitPrintsFixture
+            );
+
+            let [paperCID1, paperCID2] = await hardhatDeSciPrint.connect(editor1).printsPool(0);
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            const blockTime = Date.now() + 15;
+            await time.setNextBlockTimestamp(blockTime);
+            await hardhatDeSciPrint.connect(editor1).editorReject(paperCID1, comment)
+
+            pendingCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0);
+            expect(pendingCIDs).to.eql([paperCID2]);
+
+            rejectedCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(2);
+            expect(rejectedCIDs).to.eql([paperCID1]);
+
+            processInfo = await hardhatDeSciPrint.deSciProcess(paperCID1);
+            expect(processInfo.editor).to.eq(editor1.address);
+            expect(processInfo.processStatus).to.eq(2);
+
+            reviewInfo = await hardhatDeSciPrint.deSciReviews(paperCID1, editor1.address);
+            expect(reviewInfo.comment).to.eq(comment);
+            expect(reviewInfo.commentTime).to.eq(blockTime);
+            expect(reviewInfo.reviewerStatus).to.eq(2)
+
+        });
+
         it("The pending list and in-review list after reviewers assignment", async function () {
             const { hardhatDeSciPrint, editor1, paper1, paper2 } = await loadFixture(
                 assignReviewersFixture
@@ -127,17 +157,35 @@ describe("DeSciPrint contract", function () {
 
         });
 
-        // it.only("The processInfo after reviewers assignment", async function () {
-        //     const { hardhatDeSciPrint, paper1, editor1, reviewer1, reviewer2, reviewer3 } = await loadFixture(
-        //         assignReviewersFixture
-        //     );
+        it("The processInfo after reviewers assignment", async function () {
+            const { hardhatDeSciPrint, paper1, editor1, reviewer1, reviewer2, reviewer3 } = await loadFixture(
+                assignReviewersFixture
+            );
 
-        //     processInfo = await hardhatDeSciPrint.deSciProcess(paper1.paperCID);
-        //     expect(processInfo.donate).to.eq(paper1.amount);
-        //     expect(processInfo.editor).to.eq(editor1.address);
-        //     expect(processInfo.processStatus).to.eq(1);
-        //     expect(processInfo.reviewers).to.eql([reviewer1.address, reviewer2.address, reviewer3.address]);
-        // });
+            processInfo = await hardhatDeSciPrint.deSciProcess(paper1.paperCID);
+            reviewers = await hardhatDeSciPrint.getReviewers(paper1.paperCID);
+            expect(reviewers).to.eql([reviewer1.address, reviewer2.address, reviewer3.address]);
+            expect(processInfo.donate).to.eq(paper1.amount);
+            expect(processInfo.editor).to.eq(editor1.address);
+            expect(processInfo.processStatus).to.eq(1);
+        });
+
+        it("Reviewer submit comment", async function () {
+            const { hardhatDeSciPrint, reviewer1, paper1 } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            const blockTime = Date.now() + 15;
+            await time.setNextBlockTimestamp(blockTime);
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper1.paperCID, comment, 1);
+
+            reviewInfo = await hardhatDeSciPrint.deSciReviews(paper1.paperCID, reviewer1.address);
+            expect(reviewInfo.comment).to.eq(comment);
+            expect(reviewInfo.commentTime).to.eq(blockTime);
+            expect(reviewInfo.reviewerStatus).to.eq(1)
+        });
 
     });
 

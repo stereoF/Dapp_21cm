@@ -108,7 +108,7 @@ contract DeSciRoleModel {
     }
 
     modifier onlyReviewer() {
-        require(isReviewer());
+        require(isReviewer(), "You should be added to reviewer list first!");
         _;
     }
 
