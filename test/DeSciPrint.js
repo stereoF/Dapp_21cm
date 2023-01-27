@@ -45,11 +45,11 @@ describe("DeSciPrint contract", function () {
     };
 
     async function assignReviewersFixture() {
-        const { hardhatDeSciPrint, owner, paper1, paper2, editor1, editor2, reviewer1, reviewer2, reviewer3 } = await loadFixture(
+        const { hardhatDeSciPrint, paper1, paper2, editor1, editor2, reviewer1, reviewer2, reviewer3 } = await loadFixture(
             submitPrintsFixture
         );
 
-        await hardhatDeSciPrint.connect(owner).pushReviewers([reviewer1.address, reviewer2.address, reviewer3.address]);
+        // await hardhatDeSciPrint.connect(owner).pushReviewers([reviewer1.address, reviewer2.address, reviewer3.address]);
 
         await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, 
             [reviewer1.address, reviewer2.address, reviewer3.address]);

@@ -32,9 +32,9 @@ contract DeSciRoleModel {
         return _editors;
     }
 
-    function reviewers() public view returns (address[] memory) {
-        return _reviewers;
-    }
+    // function reviewers() public view returns (address[] memory) {
+    //     return _reviewers;
+    // }
 
     /**
      * @dev Throws if called by any account other than the owner.
@@ -107,41 +107,41 @@ contract DeSciRoleModel {
         }
     }
 
-    modifier onlyReviewer() {
-        require(isReviewer(), "You should be added to reviewer list first!");
-        _;
-    }
+    // modifier onlyReviewer() {
+    //     require(isReviewer(), "You should be added to reviewer list first!");
+    //     _;
+    // }
 
-    function isReviewer() public view returns (bool) {
-        bool ret = false;
-        for (uint256 i = 0; i < _reviewers.length; i++) {
-            if (_reviewers[i] == msg.sender) {
-                ret = true;
-                break;
-            }
-        }
-        return ret;
-    }
+    // function isReviewer() public view returns (bool) {
+    //     bool ret = false;
+    //     for (uint256 i = 0; i < _reviewers.length; i++) {
+    //         if (_reviewers[i] == msg.sender) {
+    //             ret = true;
+    //             break;
+    //         }
+    //     }
+    //     return ret;
+    // }
 
-    function pushReviewers(address[] memory reviewerAddrs) public onlyOwner {
-        address addr;
-        uint256 index;
-        for (uint256 i = 0; i < reviewerAddrs.length; i++) {
-            addr = payable(reviewerAddrs[i]);
-            _reviewers.push(addr);
-            index = _reviewers.length;
-            _reviewersIndex[addr] = index;
-        }
-    }
+    // function pushReviewers(address[] memory reviewerAddrs) public onlyOwner {
+    //     address addr;
+    //     uint256 index;
+    //     for (uint256 i = 0; i < reviewerAddrs.length; i++) {
+    //         addr = payable(reviewerAddrs[i]);
+    //         _reviewers.push(addr);
+    //         index = _reviewers.length;
+    //         _reviewersIndex[addr] = index;
+    //     }
+    // }
 
-    function removeReviewer(address[] memory reviewerAddrs) public onlyOwner {
-        for (uint256 i = 0; i < reviewerAddrs.length; i++) {
-            uint256 index = _reviewersIndex[reviewerAddrs[i]];
-            if (index > 0) {
-                _reviewers[index - 1] = _reviewers[_reviewers.length - 1];
-                _reviewers.pop();
-                _reviewersIndex[reviewerAddrs[i]] = 0;
-            }
-        }
-    }
+    // function removeReviewer(address[] memory reviewerAddrs) public onlyOwner {
+    //     for (uint256 i = 0; i < reviewerAddrs.length; i++) {
+    //         uint256 index = _reviewersIndex[reviewerAddrs[i]];
+    //         if (index > 0) {
+    //             _reviewers[index - 1] = _reviewers[_reviewers.length - 1];
+    //             _reviewers.pop();
+    //             _reviewersIndex[reviewerAddrs[i]] = 0;
+    //         }
+    //     }
+    // }
 }

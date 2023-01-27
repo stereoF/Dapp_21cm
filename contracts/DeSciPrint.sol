@@ -172,7 +172,7 @@ contract DeSciPrint is DeSciRoleModel {
         string memory fileCID,
         string memory reviewCID,
         ReviewerStatus status
-    ) public onlyReviewer {
+    ) public {
         require(status != ReviewerStatus.Submit, "Must change the ReviewerStatus!");
         ReviewInfo storage reviewInfo = deSciReviews[fileCID][msg.sender];
         require(reviewInfo.reviewerStatus == ReviewerStatus.Submit, "You have submitted the comments!");
