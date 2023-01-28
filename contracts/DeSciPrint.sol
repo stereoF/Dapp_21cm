@@ -297,40 +297,6 @@ contract DeSciPrint is DeSciRoleModel {
         deSciProcess[fileCID].editor = newEditor;
     }
 
-    // function editorAssign(string memory fileCID, address editor)
-    //     public
-    //     onlyOwner
-    // {
-    //     ProcessInfo storage processInfo = DeSciProcess[fileCID];
-    //     require(processInfo.status == 0);
-    //     processInfo.editor = editor;
-    //     processInfo.status = uint256(1); // 已分配编辑
-    // }
-
-    // function reviewerConfirm(string memory fileCID, bool isAccept)
-    //     public
-    //     onlyReviewer
-    // {
-    //     ProcessInfo storage processInfo = DeSciProcess[fileCID];
-    //     require(processInfo.status == 2);
-    //     if (!isAccept) {
-    //         bool inReview = false;
-    //         for (uint256 i = 0; i < processInfo.reviewers.length; i++) {
-    //             if (msg.sender == processInfo.reviewers[i]) {
-    //                 processInfo.reviewers[i] = processInfo.reviewers[
-    //                     processInfo.reviewers.length - 1
-    //                 ];
-    //                 processInfo.reviewers.pop();
-    //                 inReview = true;
-    //                 break;
-    //             }
-    //         }
-    //         if (processInfo.reviewers.length == 0) {
-    //             processInfo.status = uint256(1); // 未分配审稿人
-    //         }
-    //     }
-    // }
-
     receive() external payable {}
 
     function withdraw() public payable onlyOwner {
