@@ -6,7 +6,7 @@ import "./DeSciRoleModel.sol";
 contract DeSciPrint is DeSciRoleModel {
     uint256 public minGasCost = 0.0001 ether;
     enum ReviewerStatus { Submit, Revise, Reject, Pass }
-    enum ProcessStatus { Pending, ReviewerAssigned, EditorRejected, ReviewerRejected, AppendReviewer, Published }
+    enum ProcessStatus { Pending, ReviewerAssigned, EditorRejected, ReviewerRejected, AppendReviewer, NeedRevise, RepliedNew, Published }
 
     function setMinGasCost(uint256 amount) public onlyOwner {
         minGasCost = amount;
@@ -24,6 +24,8 @@ contract DeSciPrint is DeSciRoleModel {
         string comment;
         uint256 commentTime;
         ReviewerStatus reviewerStatus;
+        string reply;
+        uint256 replyTime;
     }
 
     struct PrintInfo {
@@ -44,7 +46,7 @@ contract DeSciPrint is DeSciRoleModel {
     mapping(string => PrintInfo) public deSciPrints;
     mapping(string => ProcessInfo) public deSciProcess;
     mapping(string => mapping(address => ReviewInfo)) public deSciReviews;
-    mapping(string => mapping(address => uint8)) public reviewerIndex;
+    mapping(string => mapping(address => uint256)) public reviewerIndex;
     string[] public deSciFileCIDs;
 
     function submitForReview(
@@ -90,33 +92,95 @@ contract DeSciPrint is DeSciRoleModel {
         return printsPool_; // step 4 - return
     }
 
-
-    function reviewerAssign(string memory fileCID, address[] memory reviewers_)
-        public
-        onlyEditor
-    {
+    modifier canOperate(string memory fileCID) {
         ProcessInfo storage processInfo = deSciProcess[fileCID];
         require(processInfo.editor == msg.sender || processInfo.editor == address(0), "Can't be processed by different editor");
         require(
             processInfo.processStatus == ProcessStatus.Pending || processInfo.processStatus == ProcessStatus.AppendReviewer,
             "Can only assign to pending or append-need paper"
-            );
+        );
+        _;
+    }
+
+    modifier checkProcessStatus(string memory fileCID) {
+        _;
+        ProcessInfo storage process = deSciProcess[fileCID];
+        address[] memory reviewers = process.reviewers;
+        uint256 totalCnt = reviewers.length;
+        require(totalCnt <= 3, 'No more than 3 reviewers');
+
+        uint8 passCnt = 0;
+        uint8 rejectCnt = 0;
+        uint8 reviseCnt = 0;
+        uint8 submitCnt = 0;
+
+        for (uint256 i = 0; i < reviewers.length; i++) {
+            ReviewInfo storage reviewInfo = deSciReviews[fileCID][reviewers[i]];
+            if (reviewInfo.reviewerStatus == ReviewerStatus.Pass) {
+                passCnt++;
+            }
+            else if (reviewInfo.reviewerStatus == ReviewerStatus.Reject) {
+                rejectCnt++;
+            }
+            else if (reviewInfo.reviewerStatus == ReviewerStatus.Revise) {
+                reviseCnt++;
+            }
+            else {
+                submitCnt++;
+            }
+        }
+
+        if (totalCnt < 2) {
+            process.processStatus = ProcessStatus.AppendReviewer;
+        }
+        else {
+            if (passCnt >= 2){
+                process.processStatus = ProcessStatus.Published;
+            }
+            else if (rejectCnt >= 2){
+                process.processStatus = ProcessStatus.ReviewerRejected;
+            }
+            else if (totalCnt == 2 && rejectCnt == 1) {
+                process.processStatus = ProcessStatus.AppendReviewer;
+            }
+            else if (submitCnt == 0  && reviseCnt+passCnt >= 2) {
+                process.processStatus = ProcessStatus.NeedRevise;
+            }
+            else {
+                process.processStatus = ProcessStatus.ReviewerAssigned;
+            }
+        }
+    }
+
+    function _reviewerAssign(string memory fileCID, address[] memory reviewers_)
+        private
+    {
+        ProcessInfo storage processInfo = deSciProcess[fileCID];
+
+        address addr;
+        uint256 index;
+        for (uint8 i = 0; i < reviewers_.length; i++) {
+            addr = payable(reviewers_[i]);
+            require(reviewerIndex[fileCID][addr] == 0, "Duplicate reviewer");
+            processInfo.reviewers.push(addr);
+            index = processInfo.reviewers.length;
+            reviewerIndex[fileCID][addr] = index;
+        }
+    }
+
+    function reviewerAssign(string memory fileCID, address[] memory reviewers_)
+        public
+        onlyEditor
+        canOperate(fileCID)
+        checkProcessStatus(fileCID)
+    {
+        ProcessInfo storage processInfo = deSciProcess[fileCID];
 
         if (processInfo.editor == address(0)) {
             processInfo.editor = msg.sender;
         }
 
-        address addr;
-        uint8 index;
-        for (uint8 i = 0; i < reviewers_.length; i++) {
-            addr = payable(reviewers_[i]);
-            require(reviewerIndex[fileCID][addr] == 0, "Duplicate reviewer");
-            processInfo.reviewers.push(addr);
-            index = uint8(processInfo.reviewers.length);
-            reviewerIndex[fileCID][addr] = index;
-        }
-        require(processInfo.reviewers.length >= 2 && processInfo.reviewers.length <= 3, 'Need 2 or 3 reviewers');
-        processInfo.processStatus = ProcessStatus.ReviewerAssigned;
+        _reviewerAssign(fileCID, reviewers_);
     }
 
     function getReviewers(string memory fileCID)
@@ -130,6 +194,7 @@ contract DeSciPrint is DeSciRoleModel {
     function editorReject(string memory fileCID, string memory comment_)
         public
         onlyEditor
+        canOperate(fileCID)
     {
         ProcessInfo storage processInfo = deSciProcess[fileCID];
         processInfo.editor = msg.sender;
@@ -163,67 +228,74 @@ contract DeSciPrint is DeSciRoleModel {
         string memory fileCID,
         string memory reviewCID,
         ReviewerStatus status
-    ) public onlyReviewer(fileCID) {
+    ) public onlyReviewer(fileCID) checkProcessStatus(fileCID) {
         require(status != ReviewerStatus.Submit, "Must change the ReviewerStatus!");
         ReviewInfo storage reviewInfo = deSciReviews[fileCID][msg.sender];
         require(reviewInfo.reviewerStatus == ReviewerStatus.Submit, "You have submitted the comments!");
 
-        ProcessInfo storage process = deSciProcess[fileCID];
-        address[] memory reviewers = process.reviewers;
-
         reviewInfo.comment = reviewCID;
         reviewInfo.commentTime = block.timestamp;
         reviewInfo.reviewerStatus = status;
+    }
 
-        uint8 passCnt = 0;
-        uint8 rejectCnt = 0;
+    modifier onlyAuthor(string memory fileCID) {
+        require(deSciPrints[fileCID].submitAddress == msg.sender, "You are not the author!");
+        _;
+    }
 
-        for (uint256 i = 0; i < reviewers.length; i++) {
-            reviewInfo = deSciReviews[fileCID][reviewers[i]];
-            if (reviewInfo.reviewerStatus == ReviewerStatus.Pass) {
-                passCnt++;
+    function replyReviewInfo(
+        string memory fileCID,
+        address reviewer,
+        string memory replyCID
+    ) public onlyAuthor(fileCID) {
+        require(_isReviewer(fileCID, reviewer), "Not the reviewer");
+        ReviewInfo storage reviewInfo = deSciReviews[fileCID][reviewer];
+        require(reviewInfo.reviewerStatus != ReviewerStatus.Submit, "Cannot reply before comment submitted");
+        reviewInfo.reply = replyCID;
+        reviewInfo.replyTime = block.timestamp;
+    }
+
+    function replyNew(
+        string memory preFileCID,
+        string memory _fileCID,
+        string memory _keyInfo,
+        uint256 _amount
+    ) public payable onlyAuthor(preFileCID) {
+        ProcessInfo storage preProcess = deSciProcess[preFileCID];
+        require(preProcess.processStatus == ProcessStatus.NeedRevise, 'The status should be NeedRevise');
+        submitForReview(_fileCID, _keyInfo, _amount);
+        PrintInfo storage prePrintInfo = deSciPrints[preFileCID];
+        prePrintInfo.nextCID = _fileCID;
+        preProcess.processStatus = ProcessStatus.RepliedNew;
+        PrintInfo storage printInfo = deSciPrints[_fileCID];
+        printInfo.prevCID = preFileCID;
+        ProcessInfo storage processInfo = deSciProcess[_fileCID];
+        processInfo.editor = preProcess.editor;
+        _reviewerAssign(_fileCID, preProcess.reviewers);
+    }
+
+    function removeReviewer(string memory fileCID, address[] memory _reviewers) 
+        public
+        onlyEditor
+        canOperate(fileCID)
+    {
+        address[] storage reviewers = deSciProcess[fileCID].reviewers;
+        for (uint256 i = 0; i < _reviewers.length; i++) {
+            uint256 index = reviewerIndex[fileCID][_reviewers[i]];
+            if (index > 0) {
+                reviewers[index - 1] = reviewers[reviewers.length - 1];
+                reviewers.pop();
+                reviewerIndex[fileCID][_reviewers[i]] = 0;
             }
-            if (reviewInfo.reviewerStatus == ReviewerStatus.Reject) {
-                rejectCnt++;
-            }
-        }
-
-        if (passCnt >= 2){
-            process.processStatus = ProcessStatus.Published;
-        }
-
-        if (rejectCnt >= 2){
-            process.processStatus = ProcessStatus.ReviewerRejected;
-        }
-
-        if (reviewers.length == 2 && rejectCnt == 1) {
-            process.processStatus = ProcessStatus.AppendReviewer;
         }
     }
 
-    // function replyReviewInfo(
-    //     string memory fileCID,
-    //     string memory newFileCID,
-    //     string[] memory replyInfos,
-    //     address[] memory toEditors
-    // ) public {
-    //     require(replyInfos.length == toEditors.length);
-    //     ProcessInfo storage process = DeSciProcess[fileCID];
-    //     PrintInfo storage print = DeSciPrints[fileCID];
-
-    //     require(print.submitAddress == msg.sender);
-    //     print.fileCIDs.push(newFileCID);
-    //     for (uint8 i = 0; i < replyInfos.length; i++) {
-    //         process.reviewInfos.push(
-    //             ReviewInfo({
-    //                 remark: replyInfos[i],
-    //                 rmkTime: block.timestamp,
-    //                 fromAddr: msg.sender,
-    //                 toAddr: toEditors[i]
-    //             })
-    //         );
-    //     }
-    // }
+    function changeEditor(string memory fileCID, address newEditor)
+        public 
+        onlyOwner
+    {
+        deSciProcess[fileCID].editor = newEditor;
+    }
 
     // function editorAssign(string memory fileCID, address editor)
     //     public
