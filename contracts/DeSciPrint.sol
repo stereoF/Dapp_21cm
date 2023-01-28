@@ -281,6 +281,10 @@ contract DeSciPrint is DeSciRoleModel {
     {
         address[] storage reviewers = deSciProcess[fileCID].reviewers;
         for (uint256 i = 0; i < _reviewers.length; i++) {
+            require(
+                deSciReviews[fileCID][_reviewers[i]].reviewerStatus == ReviewerStatus.Submit,
+                "Can only remove no action reviewer"
+            );
             uint256 index = reviewerIndex[fileCID][_reviewers[i]];
             if (index > 0) {
                 reviewers[index - 1] = reviewers[reviewers.length - 1];
