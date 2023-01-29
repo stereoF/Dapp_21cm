@@ -4,7 +4,9 @@ import "./DeSciRoleModel.sol";
 // import "hardhat/console.sol";
 
 contract DeSciPrint is DeSciRoleModel {
-    uint256 public minGasCost = 0.0001 ether;
+    uint256 public minGasCost = 0.0004 ether;
+    uint256 public editorActGas = 0.0002 ether;
+    uint256 public reviewerActGas = 0.0001 ether;
     enum ReviewerStatus { Submit, Revise, Reject, Pass }
     enum ProcessStatus { Pending, ReviewerAssigned, EditorRejected, ReviewerRejected, AppendReviewer, NeedRevise, RepliedNew, Published }
 
@@ -12,11 +14,26 @@ contract DeSciPrint is DeSciRoleModel {
         minGasCost = amount;
     }
 
-    uint256 private minWithdrawValue = 0.01 ether;
+    function setEditorActGas(uint256 amount) public onlyOwner {
+        editorActGas = amount;
+    }
+
+    function setReviewerActGas(uint256 amount) public onlyOwner {
+        reviewerActGas = amount;
+    }
+
+    uint256 public minWithdrawValue = 0.01 ether;
 
     function setMinWithdrawValue(uint256 amount) public onlyOwner {
         minWithdrawValue = amount;
     }
+
+    uint256 public minDonate = 2000 gwei;
+
+    function setMinDonate(uint256 amount) public onlyOwner {
+        minDonate = amount;
+    }
+
 
     mapping(address => uint256) tokenBalance;
 
@@ -58,7 +75,7 @@ contract DeSciPrint is DeSciRoleModel {
             deSciPrints[_fileCID].submitAddress == address(0),
             "File cid exist!"
         );
-        require(_amount > 0 && msg.value >= (_amount + minGasCost), "Not enough amount!");
+        require(_amount >= minDonate && msg.value >= (_amount + minGasCost), "Not enough amount!");
         uint256 _submitTime = block.timestamp;
         address _submitAddress = msg.sender;
 
@@ -174,6 +191,7 @@ contract DeSciPrint is DeSciRoleModel {
         canOperate(fileCID)
         checkProcessStatus(fileCID)
     {
+        require(reviewers_.length > 0, 'Need more than 1 reviewer');
         ProcessInfo storage processInfo = deSciProcess[fileCID];
 
         if (processInfo.editor == address(0)) {
@@ -278,7 +296,9 @@ contract DeSciPrint is DeSciRoleModel {
         public
         onlyEditor
         canOperate(fileCID)
+        checkProcessStatus(fileCID)
     {
+        require(_reviewers.length > 0, 'Need remove at least 1 reviewer');
         address[] storage reviewers = deSciProcess[fileCID].reviewers;
         for (uint256 i = 0; i < _reviewers.length; i++) {
             require(
