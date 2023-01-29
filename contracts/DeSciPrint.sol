@@ -278,7 +278,7 @@ contract DeSciPrint is DeSciRoleModel {
         string memory _fileCID,
         string memory _keyInfo,
         uint256 _amount
-    ) public payable onlyAuthor(preFileCID) {
+    ) public payable onlyAuthor(preFileCID) checkProcessStatus(_fileCID) {
         ProcessInfo storage preProcess = deSciProcess[preFileCID];
         require(preProcess.processStatus == ProcessStatus.NeedRevise, 'The status should be NeedRevise');
         submitForReview(_fileCID, _keyInfo, _amount);
