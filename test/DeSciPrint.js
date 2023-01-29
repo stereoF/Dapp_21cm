@@ -19,7 +19,7 @@ describe("DeSciPrint contract", function () {
             deployDeSciPrintFixture
         );
 
-        const minGasCost = await hardhatDeSciPrint.minGasCost();
+        const minGasCost = await hardhatDeSciPrint.gasFee(0);
         await hardhatDeSciPrint.pushEditors([editor1.address, editor2.address]);
 
         const paper1 = {
@@ -67,9 +67,9 @@ describe("DeSciPrint contract", function () {
             );
 
             const minGasCost = ethers.utils.parseEther('0.2', 'ether');
-            await hardhatDeSciPrint.setMinGasCost(minGasCost);
+            await hardhatDeSciPrint.setGasFee(minGasCost, 0);
             
-            expect(await hardhatDeSciPrint.minGasCost()).to.equal(ethers.utils.parseEther('0.2', 'ether'));
+            expect(await hardhatDeSciPrint.gasFee(0)).to.equal(ethers.utils.parseEther('0.2', 'ether'));
 
         });
 

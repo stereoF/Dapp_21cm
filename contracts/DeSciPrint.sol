@@ -4,36 +4,29 @@ import "./DeSciRoleModel.sol";
 // import "hardhat/console.sol";
 
 contract DeSciPrint is DeSciRoleModel {
-    uint256 public minGasCost = 0.0004 ether;
-    uint256 public editorActGas = 0.0002 ether;
-    uint256 public reviewerActGas = 0.0001 ether;
+
+    // minGasCost, editorActGas, reviewerActGas, minWithdrawValue, minDonate
+    uint256[5] public gasFee = [0.0004 ether, 0.0002 ether, 0.0001 ether, 0.01 ether, 2000 gwei];
+
+    function setGasFee(uint256 amount, uint8 index) public onlyOwner {
+        gasFee[index] = amount;
+    }
+
+    // reviewerPass, reviewerRevise, reviewerReject, reviewerAssign, reviewerAppend, reviewerRemove, editorReject, published, contractTakeRate
+    uint256[9] public bonusWeight = [3,6,3,3,1,1,1,2,5];
+
+    function setBonusWeight(uint256 amount, uint8 index) public onlyOwner {
+        bonusWeight[index] = amount;
+    }
+
+    uint8 public editorActLimit = 4;
+
+    function setEditorActLimit(uint8 limitCnt) public onlyOwner {
+        editorActLimit = limitCnt;
+    }
+    
     enum ReviewerStatus { Submit, Revise, Reject, Pass }
     enum ProcessStatus { Pending, ReviewerAssigned, EditorRejected, ReviewerRejected, AppendReviewer, NeedRevise, RepliedNew, Published }
-
-    function setMinGasCost(uint256 amount) public onlyOwner {
-        minGasCost = amount;
-    }
-
-    function setEditorActGas(uint256 amount) public onlyOwner {
-        editorActGas = amount;
-    }
-
-    function setReviewerActGas(uint256 amount) public onlyOwner {
-        reviewerActGas = amount;
-    }
-
-    uint256 public minWithdrawValue = 0.01 ether;
-
-    function setMinWithdrawValue(uint256 amount) public onlyOwner {
-        minWithdrawValue = amount;
-    }
-
-    uint256 public minDonate = 2000 gwei;
-
-    function setMinDonate(uint256 amount) public onlyOwner {
-        minDonate = amount;
-    }
-
 
     mapping(address => uint256) tokenBalance;
 
@@ -58,6 +51,8 @@ contract DeSciPrint is DeSciRoleModel {
         address editor;
         address[] reviewers;
         ProcessStatus processStatus;
+        uint8 editorActCnt;
+        uint256 donateLeft;
     }
 
     mapping(string => PrintInfo) public deSciPrints;
@@ -65,6 +60,7 @@ contract DeSciPrint is DeSciRoleModel {
     mapping(string => mapping(address => ReviewInfo)) public deSciReviews;
     mapping(string => mapping(address => uint256)) public reviewerIndex;
     string[] public deSciFileCIDs;
+
 
     function submitForReview(
         string memory _fileCID,
@@ -75,7 +71,7 @@ contract DeSciPrint is DeSciRoleModel {
             deSciPrints[_fileCID].submitAddress == address(0),
             "File cid exist!"
         );
-        require(_amount >= minDonate && msg.value >= (_amount + minGasCost), "Not enough amount!");
+        require(_amount >= gasFee[4] && msg.value >= (_amount + gasFee[0]), "Not enough amount!");
         uint256 _submitTime = block.timestamp;
         address _submitAddress = msg.sender;
 
@@ -86,6 +82,7 @@ contract DeSciPrint is DeSciRoleModel {
         print.keyInfo = _keyInfo;
         process.donate = _amount;
         deSciFileCIDs.push(_fileCID);
+
     }
 
     function printsPool(ProcessStatus _status) public view returns (string[] memory printsPool_) {
@@ -199,6 +196,8 @@ contract DeSciPrint is DeSciRoleModel {
         }
 
         _reviewerAssign(fileCID, reviewers_);
+
+        processInfo.editorActCnt++;
     }
 
     function getReviewers(string memory fileCID)
@@ -330,7 +329,7 @@ contract DeSciPrint is DeSciRoleModel {
     }
 
     function withdraw_token() public payable {
-        require(tokenBalance[msg.sender] > minWithdrawValue);
+        require(tokenBalance[msg.sender] > gasFee[3]);
         tokenBalance[msg.sender] = 0;
         payable(msg.sender).transfer(tokenBalance[msg.sender]);
     }
