@@ -306,9 +306,11 @@ contract DeSciPrint is DeSciRoleModel {
             );
             uint256 index = reviewerIndex[fileCID][_reviewers[i]];
             if (index > 0) {
-                reviewers[index - 1] = reviewers[reviewers.length - 1];
+                address lastReviewer = reviewers[reviewers.length - 1];
+                reviewers[index - 1] = lastReviewer;
                 reviewers.pop();
                 reviewerIndex[fileCID][_reviewers[i]] = 0;
+                reviewerIndex[fileCID][lastReviewer] = index;
             }
         }
     }

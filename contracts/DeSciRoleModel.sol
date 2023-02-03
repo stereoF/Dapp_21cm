@@ -101,9 +101,11 @@ contract DeSciRoleModel {
         for (uint256 i = 0; i < editorAddrs.length; i++) {
             uint256 index = _editorsIndex[editorAddrs[i]];
             if (index > 0) {
-                _editors[index - 1] = _editors[_editors.length - 1];
+                address lastEditor =  _editors[_editors.length - 1];
+                _editors[index - 1] = lastEditor;
                 _editors.pop();
                 _editorsIndex[editorAddrs[i]] = 0;
+                _editorsIndex[lastEditor] = index;
             }
         }
     }
