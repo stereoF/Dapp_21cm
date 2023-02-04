@@ -14,6 +14,14 @@ contract DeSciPrint is DeSciRoleModel {
 
     // reviewerPass, reviewerRevise, reviewerReject, reviewerAssign, reviewerAppend, reviewerRemove, editorReject, published, contractTakeRate
     uint256[9] public bonusWeight = [3,6,3,3,1,1,1,2,5];
+    
+    function _getBonus(uint256 total, uint8 index) private view returns(uint256 bonus) {
+        uint256 sum;
+        for (uint8 i = 0; i < 9; i++) {
+            sum += bonusWeight[i];
+        }
+        bonus = (total/sum) * bonusWeight[index];
+    }
 
     function setBonusWeight(uint256 amount, uint8 index) public onlyOwner {
         bonusWeight[index] = amount;
@@ -29,6 +37,29 @@ contract DeSciPrint is DeSciRoleModel {
     enum ProcessStatus { Pending, ReviewerAssigned, EditorRejected, ReviewerRejected, AppendReviewer, NeedRevise, RepliedNew, Published }
 
     mapping(address => uint256) tokenBalance;
+    address[] balanceAddresses;
+    mapping(address => uint256) balanceIndex;
+
+    function _addToken(address balanceOwner, uint256 amount) private {
+        if (balanceIndex[balanceOwner] == 0 ) {
+            balanceAddresses.push(balanceOwner);
+            balanceIndex[balanceOwner] = balanceAddresses.length;
+        }
+        tokenBalance[balanceOwner] += amount;
+    }
+
+    function _assignToken(address addr, uint8 bonusIndex, string memory fileCID) private {
+        ProcessInfo storage processInfo = deSciProcess[fileCID];
+        uint actionBonus = _getBonus(processInfo.donate, bonusIndex);
+        if (processInfo.donateUsed + actionBonus <= processInfo.donate) {
+            processInfo.donateUsed += actionBonus;
+            _addToken(addr, actionBonus);
+        }
+        else if (processInfo.donateUsed < processInfo.donate) {
+            processInfo.donateUsed = processInfo.donate;
+            _addToken(addr, processInfo.donate - processInfo.donateUsed);
+        }
+    }
 
     struct ReviewInfo {
         string comment;
@@ -52,7 +83,7 @@ contract DeSciPrint is DeSciRoleModel {
         address[] reviewers;
         ProcessStatus processStatus;
         uint8 editorActCnt;
-        uint256 donateLeft;
+        uint256 donateUsed;
     }
 
     mapping(string => PrintInfo) public deSciPrints;
@@ -150,6 +181,7 @@ contract DeSciPrint is DeSciRoleModel {
         else {
             if (passCnt >= 2){
                 process.processStatus = ProcessStatus.Published;
+                _assignToken(process.editor, 7, fileCID);
             }
             else if (rejectCnt >= 2){
                 process.processStatus = ProcessStatus.ReviewerRejected;
@@ -198,6 +230,10 @@ contract DeSciPrint is DeSciRoleModel {
         _reviewerAssign(fileCID, reviewers_);
 
         processInfo.editorActCnt++;
+        if (processInfo.editorActCnt <= editorActLimit) {
+            uint8 bonusIndex = (processInfo.processStatus == ProcessStatus.AppendReviewer) ? 4:3;
+            _assignToken(msg.sender, bonusIndex, fileCID);
+        }
     }
 
     function getReviewers(string memory fileCID)
@@ -221,6 +257,11 @@ contract DeSciPrint is DeSciRoleModel {
         reviewInfo.comment = comment_;
         reviewInfo.commentTime = block.timestamp;
         reviewInfo.reviewerStatus = ReviewerStatus.Reject;
+
+        processInfo.editorActCnt++;
+        if (processInfo.editorActCnt <= editorActLimit) {
+            _assignToken(msg.sender, 6, fileCID);
+        }
     }
 
     function _isReviewer(string memory fileCID, address reviewer) public view returns (bool) {
@@ -253,6 +294,18 @@ contract DeSciPrint is DeSciRoleModel {
         reviewInfo.comment = reviewCID;
         reviewInfo.commentTime = block.timestamp;
         reviewInfo.reviewerStatus = status;
+
+        uint8 bonusIndex;
+        if (status == ReviewerStatus.Pass) {
+            bonusIndex = 0;
+        }
+        else if (status == ReviewerStatus.Revise) {
+            bonusIndex = 1;
+        }
+        else {
+            bonusIndex = 2;
+        }
+        _assignToken(msg.sender, bonusIndex, fileCID);
     }
 
     modifier onlyAuthor(string memory fileCID) {
@@ -298,7 +351,8 @@ contract DeSciPrint is DeSciRoleModel {
         checkProcessStatus(fileCID)
     {
         require(_reviewers.length > 0, 'Need remove at least 1 reviewer');
-        address[] storage reviewers = deSciProcess[fileCID].reviewers;
+        ProcessInfo storage processInfo = deSciProcess[fileCID];
+        address[] storage reviewers = processInfo.reviewers;
         for (uint256 i = 0; i < _reviewers.length; i++) {
             require(
                 deSciReviews[fileCID][_reviewers[i]].reviewerStatus == ReviewerStatus.Submit,
@@ -312,6 +366,10 @@ contract DeSciPrint is DeSciRoleModel {
                 reviewerIndex[fileCID][_reviewers[i]] = 0;
                 reviewerIndex[fileCID][lastReviewer] = index;
             }
+        }
+        processInfo.editorActCnt++;
+        if (processInfo.editorActCnt <= editorActLimit) {
+            _assignToken(msg.sender, 5, fileCID);
         }
     }
 
