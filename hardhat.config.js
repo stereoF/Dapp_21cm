@@ -22,7 +22,14 @@ const { ALCHEMY_API_KEY, GOERLI_PRIVATE_KEY } = process.env;
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.9",
+  solidity: {
+    version: "0.8.9",
+    settings: {
+      optimizer: {
+        enabled: true,
+      },
+    },
+  },
   // defaultNetwork: "hardhat",
   networks: {
     hardhat: {
