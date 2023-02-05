@@ -100,3 +100,4 @@ docs/.env.example
 /artifacts
 /cache
 .env
+/outputs

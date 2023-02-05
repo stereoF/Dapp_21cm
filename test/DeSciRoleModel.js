@@ -62,6 +62,17 @@ describe("DeSciRoleModel contract", function () {
         expect(await hardhatDeSciRoleModel.connect(address2).isEditor()).to.equal(true);
     });
 
+    it("should fail if push duplicated editors", async function() {
+      const { hardhatDeSciRoleModel, editor1, editor2 } = await loadFixture(
+        deployDeSciRoleModelFixture
+      );
+
+      await expect(
+        hardhatDeSciRoleModel.pushEditors([editor1.address, editor2.address, editor2.address])
+      ).to.be.revertedWith("Duplicate editor");
+
+    });
+
   });
 
 });
