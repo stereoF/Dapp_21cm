@@ -32,10 +32,6 @@ contract DeSciRoleModel {
         return _editors;
     }
 
-    // function reviewers() public view returns (address[] memory) {
-    //     return _reviewers;
-    // }
-
     /**
      * @dev Throws if called by any account other than the owner.
      */
@@ -101,7 +97,7 @@ contract DeSciRoleModel {
         for (uint256 i = 0; i < editorAddrs.length; i++) {
             uint256 index = _editorsIndex[editorAddrs[i]];
             if (index > 0) {
-                address lastEditor =  _editors[_editors.length - 1];
+                address lastEditor = _editors[_editors.length - 1];
                 _editors[index - 1] = lastEditor;
                 _editors.pop();
                 _editorsIndex[editorAddrs[i]] = 0;
@@ -110,41 +106,4 @@ contract DeSciRoleModel {
         }
     }
 
-    // modifier onlyReviewer() {
-    //     require(isReviewer(), "You should be added to reviewer list first!");
-    //     _;
-    // }
-
-    // function isReviewer() public view returns (bool) {
-    //     bool ret = false;
-    //     for (uint256 i = 0; i < _reviewers.length; i++) {
-    //         if (_reviewers[i] == msg.sender) {
-    //             ret = true;
-    //             break;
-    //         }
-    //     }
-    //     return ret;
-    // }
-
-    // function pushReviewers(address[] memory reviewerAddrs) public onlyOwner {
-    //     address addr;
-    //     uint256 index;
-    //     for (uint256 i = 0; i < reviewerAddrs.length; i++) {
-    //         addr = payable(reviewerAddrs[i]);
-    //         _reviewers.push(addr);
-    //         index = _reviewers.length;
-    //         _reviewersIndex[addr] = index;
-    //     }
-    // }
-
-    // function removeReviewer(address[] memory reviewerAddrs) public onlyOwner {
-    //     for (uint256 i = 0; i < reviewerAddrs.length; i++) {
-    //         uint256 index = _reviewersIndex[reviewerAddrs[i]];
-    //         if (index > 0) {
-    //             _reviewers[index - 1] = _reviewers[_reviewers.length - 1];
-    //             _reviewers.pop();
-    //             _reviewersIndex[reviewerAddrs[i]] = 0;
-    //         }
-    //     }
-    // }
 }

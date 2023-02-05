@@ -38,13 +38,13 @@ contract DeSciPrint is DeSciRoleModel {
     enum ProcessStatus { Pending, ReviewerAssigned, EditorRejected, ReviewerRejected, AppendReviewer, NeedRevise, RepliedNew, Published }
 
     mapping(address => uint256) tokenBalance;
-    address[] balanceAddresses;
+    address[] balanceAddrs;
     mapping(address => uint256) balanceIndex;
 
     function _addToken(address balanceOwner, uint256 amount) private {
         if (balanceIndex[balanceOwner] == 0 ) {
-            balanceAddresses.push(balanceOwner);
-            balanceIndex[balanceOwner] = balanceAddresses.length;
+            balanceAddrs.push(balanceOwner);
+            balanceIndex[balanceOwner] = balanceAddrs.length;
         }
         tokenBalance[balanceOwner] += amount;
     }
@@ -59,6 +59,18 @@ contract DeSciPrint is DeSciRoleModel {
         else if (processInfo.donateUsed < processInfo.donate) {
             processInfo.donateUsed = processInfo.donate;
             _addToken(addr, processInfo.donate - processInfo.donateUsed);
+        }
+    }
+
+    function _clearBalance(address addr) private {
+        tokenBalance[addr] = 0;
+        uint256 index = balanceIndex[addr];
+        if (index > 0) {
+            address lastAddr = balanceAddrs[balanceAddrs.length - 1];
+            balanceAddrs[index - 1] = lastAddr;
+            balanceAddrs.pop();
+            balanceIndex[addr] = 0;
+            balanceIndex[lastAddr] = index;
         }
     }
 
@@ -391,15 +403,33 @@ contract DeSciPrint is DeSciRoleModel {
 
     receive() external payable {}
 
-    function withdraw() public payable onlyOwner {
+    // Use this very carefully. Use withdrawAvalible in most cases.
+    function withdrawAll() public payable onlyOwner {
         require(address(this).balance > 0);
         address payable _owner = owner();
+        for (uint256 i = 0; i < balanceAddrs.length; i++) {
+            _clearBalance(balanceAddrs[i]);
+        }
         _owner.transfer(address(this).balance);
     }
 
-    function withdraw_token() public payable {
+    function totalUserBalance() public view returns(uint256 total) {
+        for (uint256 i = 0; i < balanceAddrs.length; i++) {
+            total += tokenBalance[balanceAddrs[i]];
+        }
+    }
+
+    function withdrawAvalible() public payable onlyOwner {
+        uint256 balanceLeft = totalUserBalance();
+        uint256 withdrawAmount = address(this).balance - balanceLeft;
+        require(withdrawAmount > 0, 'Not enough balance');
+        address payable _owner = owner();
+        _owner.transfer(withdrawAmount);
+    }
+
+    function withdrawToken() public payable {
         require(tokenBalance[msg.sender] > gasFee[3]);
-        tokenBalance[msg.sender] = 0;
+        _clearBalance(msg.sender);
         payable(msg.sender).transfer(tokenBalance[msg.sender]);
     }
 
