@@ -10,6 +10,7 @@ contract DeSciPrint is DeSciRoleModel {
 
     function setGasFee(uint256 amount, uint8 index) public onlyOwner {
         gasFee[index] = amount;
+        require(gasFee[0] >= gasFee[1] + gasFee[2], 'The minGas should cover editor and reviewer cost');
     }
 
     // reviewerPass, reviewerRevise, reviewerReject, reviewerAssign, reviewerAppend, reviewerRemove, editorReject, published, contractTakeRate
@@ -230,6 +231,9 @@ contract DeSciPrint is DeSciRoleModel {
         _reviewerAssign(fileCID, reviewers_);
 
         processInfo.editorActCnt++;
+        if (processInfo.editorActCnt == 1) {
+            _addToken(msg.sender, gasFee[1]);
+        }
         if (processInfo.editorActCnt <= editorActLimit) {
             uint8 bonusIndex = (processInfo.processStatus == ProcessStatus.AppendReviewer) ? 4:3;
             _assignToken(msg.sender, bonusIndex, fileCID);
@@ -259,6 +263,9 @@ contract DeSciPrint is DeSciRoleModel {
         reviewInfo.reviewerStatus = ReviewerStatus.Reject;
 
         processInfo.editorActCnt++;
+        if (processInfo.editorActCnt == 1) {
+            _addToken(msg.sender, gasFee[1]);
+        }
         if (processInfo.editorActCnt <= editorActLimit) {
             _assignToken(msg.sender, 6, fileCID);
         }
@@ -294,6 +301,8 @@ contract DeSciPrint is DeSciRoleModel {
         reviewInfo.comment = reviewCID;
         reviewInfo.commentTime = block.timestamp;
         reviewInfo.reviewerStatus = status;
+
+        _addToken(msg.sender, gasFee[2]);
 
         uint8 bonusIndex;
         if (status == ReviewerStatus.Pass) {
