@@ -67,9 +67,16 @@ describe("DeSciRoleModel contract", function () {
         deployDeSciRoleModelFixture
       );
 
+
       await expect(
         hardhatDeSciRoleModel.pushEditors([editor1.address, editor2.address, editor2.address])
       ).to.be.revertedWith("Duplicate editor");
+
+      await hardhatDeSciRoleModel.pushEditors([editor1.address, editor2.address]);
+      await expect(
+        hardhatDeSciRoleModel.pushEditors([editor2.address])
+      ).to.be.revertedWith("Duplicate editor");
+
 
     });
 

@@ -69,7 +69,7 @@ describe("PrePrintTrack contract", function () {
       const blockTime = Date.now() + 15;
       await time.setNextBlockTimestamp(blockTime);
 
-      await expect(await hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description'))
+      expect(await hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description'))
       .to.emit(hardhatPrePrintTrack, "Submit")
       .withArgs(paperCID, keyInfo, owner.address, blockTime, 'test description');
     });
