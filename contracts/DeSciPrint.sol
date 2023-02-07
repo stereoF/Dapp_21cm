@@ -368,7 +368,6 @@ contract DeSciPrint is DeSciRoleModel {
     function removeReviewer(string memory fileCID, address[] memory _reviewers) 
         public
         onlyEditor
-        canOperate(fileCID)
         checkProcessStatus(fileCID)
     {
         require(_reviewers.length > 0, 'Need remove at least 1 reviewer');
