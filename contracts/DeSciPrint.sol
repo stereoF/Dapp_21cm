@@ -427,9 +427,10 @@ contract DeSciPrint is DeSciRoleModel {
     }
 
     function withdrawToken() public payable {
-        require(tokenBalance[msg.sender] > gasFee[3]);
+        uint256 amount = tokenBalance[msg.sender];
+        require(amount > gasFee[3]);
         _clearBalance(msg.sender);
-        payable(msg.sender).transfer(tokenBalance[msg.sender]);
+        payable(msg.sender).transfer(amount);
     }
 
     function getBalance() public view returns (uint256) {
