@@ -2,6 +2,7 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { expect } = require("chai");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { ethers } = require("hardhat");
+const { BigNumber } = require('ethers');
 
 
 describe("DeSciPrint contract", function () {
@@ -367,6 +368,87 @@ describe("DeSciPrint contract", function () {
         });
 
     });
+
+    describe.only("economy system", function() {
+        async function allocateBalanceFixture() {
+            const { hardhatDeSciPrint, address1, editor1, reviewer1, reviewer2 } = await loadFixture(
+                deployDeSciPrintFixture
+            );
+
+            const minGasCost = await hardhatDeSciPrint.gasFee(0);
+            const editorGas = await hardhatDeSciPrint.gasFee(1);
+            const reviewerGas = await hardhatDeSciPrint.gasFee(2);
+            const bonusWeight = await hardhatDeSciPrint.bonusWeight();
+
+            let totalBonusWeight = BigNumber.from("0");
+            for(let i = 0;i<bonusWeight.length;i++){
+                totalBonusWeight = totalBonusWeight.add(bonusWeight[i]);
+            }
+
+            await hardhatDeSciPrint.pushEditors([editor1.address]);
+    
+            const paper1 = {
+                paperCID: "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo",
+                keyInfo: 'paper 1',
+                amount: ethers.utils.parseEther('0.5', 'ether')
+            };
+
+            totalAmount = paper1.amount.add(minGasCost);
+            await hardhatDeSciPrint.connect(address1).submitForReview(paper1.paperCID, paper1.keyInfo, paper1.amount, 
+                { value: totalAmount });
+
+            await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, 
+                [reviewer1.address, reviewer2.address]);
+
+            const editorBonus = paper1.amount.div(totalBonusWeight).mul(bonusWeight[3]);
+            let editorBalance = editorGas.add(editorBonus);
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper1.paperCID, comment, 3);
+
+            comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs5';
+            await hardhatDeSciPrint.connect(reviewer2).reviewPrint(paper1.paperCID, comment, 3);
+
+            const reviewerBonus = paper1.amount.div(totalBonusWeight).mul(bonusWeight[0]);
+            const reviewerBalance = reviewerGas.add(reviewerBonus);
+
+            const publishBonus = paper1.amount.div(totalBonusWeight).mul(bonusWeight[7]);
+            editorBalance = editorBalance.add(publishBonus)
+
+            return { hardhatDeSciPrint, minGasCost, editorGas, reviewerGas, paper1, totalAmount, editor1, 
+                reviewer1, reviewer2, editorBalance, reviewerBalance};
+
+        };
+
+        it("the balance should be equal to the amount transfer to the contract", async function () {
+            const { hardhatDeSciPrint, address1 } = await loadFixture(
+                deployDeSciPrintFixture
+            );
+
+            tx = {
+                to: hardhatDeSciPrint.address,
+                value: ethers.utils.parseEther('10', 'ether')
+            };
+            const transaction = await address1.sendTransaction(tx);
+        
+            expect(await hardhatDeSciPrint.getBalance()).to.equal(ethers.utils.parseEther('10', 'ether'));
+
+        });
+
+
+        it("The balance amount", async function () {
+            const { hardhatDeSciPrint, minGasCost, editorGas, reviewerGas, paper1, totalAmount, editor1, 
+                reviewer1, reviewer2, editorBalance, reviewerBalance} = await loadFixture(
+                allocateBalanceFixture
+            );
+
+            expect(await hardhatDeSciPrint.getBalance()).to.eq(totalAmount);
+            expect(await hardhatDeSciPrint.tokenBalance(editor1.address)).to.eq(editorBalance);
+            expect(await hardhatDeSciPrint.tokenBalance(reviewer1.address)).to.eq(reviewerBalance);
+            expect(await hardhatDeSciPrint.tokenBalance(reviewer2.address)).to.eq(reviewerBalance);
+        });
+
+    })
 
 })
 

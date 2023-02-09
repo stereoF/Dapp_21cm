@@ -1,31 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 import "./DeSciRoleModel.sol";
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 
 contract DeSciPrint is DeSciRoleModel {
 
     // minGasCost, editorActGas, reviewerActGas, minWithdrawValue, minDonate
-    uint256[5] public gasFee = [0.0004 ether, 0.0002 ether, 0.0001 ether, 0.01 ether, 2000 gwei];
+    uint256[5] public gasFee = [0.05 ether, 0.02 ether, 0.007 ether, 0.001 ether, 2000 gwei];
 
     function setGasFee(uint256 amount, uint8 index) public onlyOwner {
         gasFee[index] = amount;
-        require(gasFee[0] >= gasFee[1] + gasFee[2], 'The minGas should cover editor and reviewer cost');
+        require(gasFee[0] >= gasFee[1] + 3*gasFee[2], 'The minGas should cover editor and reviewer cost');
     }
 
     // reviewerPass, reviewerRevise, reviewerReject, reviewerAssign, reviewerAppend, reviewerRemove, editorReject, published, contractTakeRate
-    uint256[9] public bonusWeight = [3,6,3,3,1,1,1,2,5];
+    uint256[9] private _bonusWeight = [3,6,3,3,1,1,1,2,5];
     
     function _getBonus(uint256 total, uint8 index) private view returns(uint256 bonus) {
         uint256 sum;
         for (uint8 i = 0; i < 9; i++) {
-            sum += bonusWeight[i];
+            sum += _bonusWeight[i];
         }
-        bonus = (total/sum) * bonusWeight[index];
+        bonus = (total/sum) * _bonusWeight[index];
     }
 
     function setBonusWeight(uint256 amount, uint8 index) public onlyOwner {
-        bonusWeight[index] = amount;
+        _bonusWeight[index] = amount;
+    }
+
+    function bonusWeight() public view returns(uint256[9] memory) {
+        return _bonusWeight;
     }
 
     uint8 public editorActLimit = 4;
@@ -37,7 +41,7 @@ contract DeSciPrint is DeSciRoleModel {
     enum ReviewerStatus { Submit, Revise, Reject, Pass }
     enum ProcessStatus { Pending, ReviewerAssigned, EditorRejected, ReviewerRejected, AppendReviewer, NeedRevise, RepliedNew, Published }
 
-    mapping(address => uint256) tokenBalance;
+    mapping(address => uint256) public tokenBalance;
     address[] balanceAddrs;
     mapping(address => uint256) balanceIndex;
 
@@ -47,6 +51,7 @@ contract DeSciPrint is DeSciRoleModel {
             balanceIndex[balanceOwner] = balanceAddrs.length;
         }
         tokenBalance[balanceOwner] += amount;
+        // console.log(balanceOwner, amount);
     }
 
     function _assignToken(address addr, uint8 bonusIndex, string memory fileCID) private {
@@ -249,6 +254,7 @@ contract DeSciPrint is DeSciRoleModel {
         if (processInfo.editorActCnt <= editorActLimit) {
             uint8 bonusIndex = (processInfo.processStatus == ProcessStatus.AppendReviewer) ? 4:3;
             _assignToken(msg.sender, bonusIndex, fileCID);
+
         }
     }
 
