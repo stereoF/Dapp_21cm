@@ -369,9 +369,9 @@ describe("DeSciPrint contract", function () {
 
     });
 
-    describe.only("economy system", function() {
+    describe("economy system", function() {
         async function allocateBalanceFixture() {
-            const { hardhatDeSciPrint, address1, editor1, reviewer1, reviewer2 } = await loadFixture(
+            const { hardhatDeSciPrint, address1, editor1, reviewer1, reviewer2, owner } = await loadFixture(
                 deployDeSciPrintFixture
             );
 
@@ -416,7 +416,7 @@ describe("DeSciPrint contract", function () {
             editorBalance = editorBalance.add(publishBonus)
 
             return { hardhatDeSciPrint, minGasCost, editorGas, reviewerGas, paper1, totalAmount, editor1, 
-                reviewer1, reviewer2, editorBalance, reviewerBalance};
+                reviewer1, reviewer2, editorBalance, reviewerBalance, owner};
 
         };
 
@@ -437,8 +437,7 @@ describe("DeSciPrint contract", function () {
 
 
         it("The balance amount", async function () {
-            const { hardhatDeSciPrint, minGasCost, editorGas, reviewerGas, paper1, totalAmount, editor1, 
-                reviewer1, reviewer2, editorBalance, reviewerBalance} = await loadFixture(
+            const { hardhatDeSciPrint, totalAmount, editor1, reviewer1, reviewer2, editorBalance, reviewerBalance} = await loadFixture(
                 allocateBalanceFixture
             );
 
@@ -446,6 +445,50 @@ describe("DeSciPrint contract", function () {
             expect(await hardhatDeSciPrint.tokenBalance(editor1.address)).to.eq(editorBalance);
             expect(await hardhatDeSciPrint.tokenBalance(reviewer1.address)).to.eq(reviewerBalance);
             expect(await hardhatDeSciPrint.tokenBalance(reviewer2.address)).to.eq(reviewerBalance);
+            expect(await hardhatDeSciPrint.totalUserBalance()).to.eq(editorBalance.add(reviewerBalance).add(reviewerBalance));
+        });
+
+
+        it("Withdraw Balance", async function () {
+            const { hardhatDeSciPrint, reviewer1, reviewer2, editor1, editorBalance, reviewerBalance} = await loadFixture(
+                allocateBalanceFixture
+            );
+
+            reviewer1Balance = await ethers.provider.getBalance(reviewer1.address);
+            reviewer2Balance = await ethers.provider.getBalance(reviewer2.address);
+            editor1Balance = await ethers.provider.getBalance(editor1.address);
+
+            tx = await hardhatDeSciPrint.connect(reviewer1).withdrawToken();
+            let receipt = await tx.wait();
+            let gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice);
+            expect((await ethers.provider.getBalance(reviewer1.address)).add(gasSpent)).to.eq(reviewer1Balance.add(reviewerBalance));
+
+            tx = await hardhatDeSciPrint.connect(reviewer2).withdrawToken();
+            receipt = await tx.wait();
+            gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice);
+            expect((await ethers.provider.getBalance(reviewer2.address)).add(gasSpent)).to.eq(reviewer2Balance.add(reviewerBalance));
+
+            tx = await hardhatDeSciPrint.connect(editor1).withdrawToken();
+            receipt = await tx.wait();
+            gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice);
+            expect((await ethers.provider.getBalance(editor1.address)).add(gasSpent)).to.eq(editor1Balance.add(editorBalance));
+
+        });
+
+        
+        it("Withdraw avalible balance", async function () {
+            const { hardhatDeSciPrint, owner, editorBalance, reviewerBalance, totalAmount} = await loadFixture(
+                allocateBalanceFixture
+            );
+
+            let avalibleBalance = totalAmount.sub(editorBalance).sub(reviewerBalance.mul(2));
+            let ownBalance = await ethers.provider.getBalance(owner.address);
+
+            tx = await hardhatDeSciPrint.connect(owner).withdrawAvalible();
+            receipt = await tx.wait();
+            gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice);
+
+            expect((await ethers.provider.getBalance(owner.address)).add(gasSpent)).to.eq(ownBalance.add(avalibleBalance))
         });
 
     })

@@ -408,15 +408,15 @@ contract DeSciPrint is DeSciRoleModel {
 
     receive() external payable {}
 
-    // Use this very carefully. Use withdrawAvalible in most cases.
-    function withdrawAll() public payable onlyOwner {
-        require(address(this).balance > 0);
-        address payable _owner = owner();
-        for (uint256 i = 0; i < balanceAddrs.length; i++) {
-            _clearBalance(balanceAddrs[i]);
-        }
-        _owner.transfer(address(this).balance);
-    }
+    // // Use this very carefully. Use withdrawAvalible in most cases.
+    // function withdrawAll() public payable onlyOwner {
+    //     require(address(this).balance > 0);
+    //     address payable _owner = owner();
+    //     for (uint256 i = 0; i < balanceAddrs.length; i++) {
+    //         _clearBalance(balanceAddrs[i]);
+    //     }
+    //     _owner.transfer(address(this).balance);
+    // }
 
     function totalUserBalance() public view returns(uint256 total) {
         for (uint256 i = 0; i < balanceAddrs.length; i++) {
