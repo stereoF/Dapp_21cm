@@ -5,6 +5,12 @@ import "hardhat/console.sol";
 
 contract DeSciPrint is DeSciRoleModel {
 
+    string public name;
+
+    constructor(string memory _name) {
+        name = _name;
+    }
+
     // minGasCost, editorActGas, reviewerActGas, minWithdrawValue, minDonate
     uint256[5] public gasFee = [0.05 ether, 0.02 ether, 0.007 ether, 0.001 ether, 2000 gwei];
 

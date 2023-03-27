@@ -9,9 +9,10 @@ describe("DeSciPrint contract", function () {
     async function deployDeSciPrintFixture() {
         const [owner, address1, address2, editor1, editor2, reviewer1, reviewer2, reviewer3] = await ethers.getSigners();
         const DeSciPrint = await ethers.getContractFactory("DeSciPrint");
-        const hardhatDeSciPrint = await DeSciPrint.deploy();
+        const contractName = "future";
+        const hardhatDeSciPrint = await DeSciPrint.deploy(contractName);
     
-        return { hardhatDeSciPrint, owner, address1, address2, editor1, editor2, reviewer1, reviewer2, reviewer3 };
+        return { hardhatDeSciPrint, contractName, owner, address1, address2, editor1, editor2, reviewer1, reviewer2, reviewer3 };
     };
 
     async function submitPrintsFixture() {
@@ -60,6 +61,22 @@ describe("DeSciPrint contract", function () {
 
         return { hardhatDeSciPrint, editor1, editor2, reviewer1, reviewer2, reviewer3, paper1, paper2 };
     };
+
+    describe("Deployment", function () {
+        it("Should set the right owner", async function () {
+            const { hardhatDeSciPrint, owner } = await loadFixture(
+                deployDeSciPrintFixture
+            );
+            expect(await hardhatDeSciPrint.owner()).to.equal(owner.address);
+        });
+
+        it("Should set the right contract name", async function () {
+            const { hardhatDeSciPrint, contractName } = await loadFixture(
+                deployDeSciPrintFixture
+            );
+            expect(await hardhatDeSciPrint.name()).to.equal(contractName);
+        });
+    });
 
     describe("Management", function() {
         it("Set minGasCost", async function () {
