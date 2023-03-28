@@ -25,6 +25,7 @@ contract PrePrintTrack {
         uint256 indexed _submitTime,
         string _description
     );
+    
     event OwnershipTransferred(
         address indexed previousOwner,
         address indexed newOwner

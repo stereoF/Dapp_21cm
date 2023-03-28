@@ -116,10 +116,19 @@ contract DeSciPrint is DeSciRoleModel {
     mapping(string => mapping(address => uint256)) public reviewerIndex;
     string[] public deSciFileCIDs;
 
+    event Submit(
+        string _fileCID,
+        string keyInfo,
+        address indexed _submitAddress,
+        uint256 indexed _submitTime,
+        string _description,
+        uint256 _amount
+    );
 
     function submitForReview(
         string memory _fileCID,
         string memory _keyInfo,
+        string memory _description,
         uint256 _amount
     ) public payable {
         require(
@@ -137,6 +146,15 @@ contract DeSciPrint is DeSciRoleModel {
         print.keyInfo = _keyInfo;
         process.donate = _amount;
         deSciFileCIDs.push(_fileCID);
+
+        emit Submit(
+            _fileCID,
+            _keyInfo,
+            _submitAddress,
+            _submitTime,
+            _description,
+            _amount
+        );
 
     }
 
@@ -362,11 +380,12 @@ contract DeSciPrint is DeSciRoleModel {
         string memory preFileCID,
         string memory _fileCID,
         string memory _keyInfo,
+        string memory _description,
         uint256 _amount
     ) public payable onlyAuthor(preFileCID) checkProcessStatus(_fileCID) {
         ProcessInfo storage preProcess = deSciProcess[preFileCID];
         require(preProcess.processStatus == ProcessStatus.NeedRevise, 'The status should be NeedRevise');
-        submitForReview(_fileCID, _keyInfo, _amount);
+        submitForReview(_fileCID, _keyInfo, _description, _amount);
         PrintInfo storage prePrintInfo = deSciPrints[preFileCID];
         prePrintInfo.nextCID = _fileCID;
         preProcess.processStatus = ProcessStatus.RepliedNew;

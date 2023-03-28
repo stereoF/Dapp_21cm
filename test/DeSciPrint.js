@@ -27,23 +27,25 @@ describe("DeSciPrint contract", function () {
         const paper1 = {
             paperCID: "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo",
             keyInfo: 'paper 1',
+            description: 'paper 1 description',
             amount: ethers.utils.parseEther('1.5', 'ether')
         };
-        await hardhatDeSciPrint.connect(address1).submitForReview(paper1.paperCID, paper1.keyInfo, paper1.amount, 
+        await hardhatDeSciPrint.connect(address1).submitForReview(paper1.paperCID, paper1.keyInfo, paper1.description, paper1.amount, 
             { value: paper1.amount.add(minGasCost) });
 
         const paper2 = {
             paperCID: "QmakBV63npN4DLpYheAq9jpn9yLqsGi3caSUtJ8GCUQ27H",
             keyInfo: 'paper 2',
+            description: 'paper 2 description',
             amount: ethers.utils.parseEther('1.7', 'ether')
         };
         const blockTime = Date.now() + 15;
         await time.setNextBlockTimestamp(blockTime);
-        await hardhatDeSciPrint.connect(address2).submitForReview(paper2.paperCID, paper2.keyInfo, paper2.amount, 
+        await hardhatDeSciPrint.connect(address2).submitForReview(paper2.paperCID, paper2.keyInfo, paper2.description, paper2.amount, 
             { value: paper2.amount.add(minGasCost) });
     
         return { hardhatDeSciPrint, owner, address1, address2, editor1, editor2, 
-            reviewer1, reviewer2, reviewer3, paper1, paper2, minGasCost, blockTime };
+            reviewer1, reviewer2, reviewer3, paper1, paper2, minGasCost, blockTime, minGasCost };
     };
 
     async function assignReviewersFixture() {
@@ -137,6 +139,26 @@ describe("DeSciPrint contract", function () {
             processInfo = await hardhatDeSciPrint.deSciProcess(paper2.paperCID);
             expect(processInfo.donate).to.eq(paper2.amount);
             expect(processInfo.processStatus).to.eq(0);
+        });
+
+        it("Should emit an event when submit a print", async function () {
+            const { hardhatDeSciPrint, address2, minGasCost } = await loadFixture(
+                submitPrintsFixture
+            );
+
+            const paper3 = {
+                paperCID: "QmakBV63npN4DLpYheAq9t2n9yLqsGi3caSUtJ8GCUQ27H",
+                keyInfo: 'paper 3',
+                description: 'paper 3 description',
+                amount: ethers.utils.parseEther('1.7', 'ether')
+            };
+            const blockTime = Date.now() + 15;
+            await time.setNextBlockTimestamp(blockTime);
+
+            expect (await hardhatDeSciPrint.submitForReview(paper3.paperCID, paper3.keyInfo, paper3.description, paper3.amount,
+                { value: paper3.amount.add(minGasCost) }))
+                .to.emit(hardhatDeSciPrint, 'submit')
+                .withArgs(paper3.paperCID, paper3.keyInfo, address2.address, blockTime, paper3.description);
         });
 
         it("Get all prints in process by editor", async function () {
@@ -407,11 +429,12 @@ describe("DeSciPrint contract", function () {
             const paper1 = {
                 paperCID: "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo",
                 keyInfo: 'paper 1',
+                description: 'paper 1 description',
                 amount: ethers.utils.parseEther('0.5', 'ether')
             };
 
             totalAmount = paper1.amount.add(minGasCost);
-            await hardhatDeSciPrint.connect(address1).submitForReview(paper1.paperCID, paper1.keyInfo, paper1.amount, 
+            await hardhatDeSciPrint.connect(address1).submitForReview(paper1.paperCID, paper1.keyInfo, paper1.description, paper1.amount, 
                 { value: totalAmount });
 
             await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, 
