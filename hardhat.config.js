@@ -37,7 +37,7 @@ module.exports = {
     },
     ganache: {
       url: "http://172.28.160.1:7545",
-      accounts: ["0x5133ea3942063492ef6bfdab57c9bc0f820bb57717c13a83c76c3dcd505da4f6"]
+      accounts: ["0x317240cc72c31504a78a01bda8ce3f466105406d5f19bb49f02ccecc649e39c2"]
     },
     // goerli: {
     //   url: `https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,

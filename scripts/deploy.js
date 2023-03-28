@@ -18,17 +18,30 @@ async function main() {
     const PrePrintTrack = await ethers.getContractFactory("PrePrintTrack");
     const prePrintTrack = await PrePrintTrack.deploy();
     await prePrintTrack.deployed();
-  
     console.log("PrePrintTrack address:", prePrintTrack.address);
 
     // We also save the contract's artifacts and address in the frontend directory
-    saveFrontendFiles(prePrintTrack);
+    savePrePrintFrontendFiles(prePrintTrack);
+
+    contracts = []
+    deSciPrintNames = ["Future"];
+    for (let i = 0; i < deSciPrintNames.length; i++) {
+      const DeSciPrint = await ethers.getContractFactory("DeSciPrint");
+      const deSciPrint = await DeSciPrint.deploy(deSciPrintNames[i]);
+      await deSciPrint.deployed();
+      contracts.push(deSciPrint);
+      console.log("DeSciPrint name:", deSciPrintNames[i]);
+      console.log("DeSciPrint address:", deSciPrint.address);
+    };
+
+    saveDeSciFrontendFiles(contracts);
+
   }
 
-function saveFrontendFiles(prePrintTrack) {
+function savePrePrintFrontendFiles(prePrintTrack) {
   const fs = require("fs");
   // const contractsDir = path.join(__dirname, "..", "frontend", "src", "contracts");
-  const contractsDir = path.join(__dirname, "..", "outputs", "contracts");
+  const contractsDir = path.join(__dirname, "..", "outputs", "contracts", "preprint");
 
   if (!fs.existsSync(contractsDir)) {
     fs.mkdirSync(contractsDir);
@@ -36,13 +49,40 @@ function saveFrontendFiles(prePrintTrack) {
 
   fs.writeFileSync(
     path.join(contractsDir, "contract-address.json"),
-    JSON.stringify({ PrePrintTrack: prePrintTrack.address }, undefined, 2)
+    // JSON.stringify({ PrePrintTrack: prePrintTrack.address }, undefined, 2)
+    JSON.stringify({ "name": "PrePrintTrack", "address": prePrintTrack.address }, undefined, 2)
   );
 
   const PrePrintTrackArtifact = artifacts.readArtifactSync("PrePrintTrack");
 
   fs.writeFileSync(
     path.join(contractsDir, "PrePrintTrack.json"),
+    JSON.stringify(PrePrintTrackArtifact, null, 2)
+  );
+}
+
+function saveDeSciFrontendFiles(contracts) {
+  const fs = require("fs");
+  // const contractsDir = path.join(__dirname, "..", "frontend", "src", "contracts");
+  const contractsDir = path.join(__dirname, "..", "outputs", "contracts", "desci");
+
+  if (!fs.existsSync(contractsDir)) {
+    fs.mkdirSync(contractsDir);
+  }
+
+  contractAddresses = contracts.map((contract) => {
+    return {"name": contract.name(), "address": contract.address}
+  });
+
+  fs.writeFileSync(
+    path.join(contractsDir, "contract-address.json"),
+    JSON.stringify(contractAddresses, undefined, 2)
+  );
+
+  const PrePrintTrackArtifact = artifacts.readArtifactSync("DeSciPrint");
+
+  fs.writeFileSync(
+    path.join(contractsDir, "DeSciPrint.json"),
     JSON.stringify(PrePrintTrackArtifact, null, 2)
   );
 }
