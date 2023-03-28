@@ -99,4 +99,5 @@ docs/.env.example
 
 /artifacts
 /cache
+/output
 .env
