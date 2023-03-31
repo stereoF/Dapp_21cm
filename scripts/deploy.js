@@ -29,7 +29,7 @@ async function main() {
       const DeSciPrint = await ethers.getContractFactory("DeSciPrint");
       const deSciPrint = await DeSciPrint.deploy(deSciPrintNames[i]);
       await deSciPrint.deployed();
-      contracts.push(deSciPrint);
+      contracts.push({"name": deSciPrintNames[i], "contract": deSciPrint});
       console.log("DeSciPrint name:", deSciPrintNames[i]);
       console.log("DeSciPrint address:", deSciPrint.address);
     };
@@ -50,7 +50,7 @@ function savePrePrintFrontendFiles(prePrintTrack) {
   fs.writeFileSync(
     path.join(contractsDir, "contract-address.json"),
     // JSON.stringify({ PrePrintTrack: prePrintTrack.address }, undefined, 2)
-    JSON.stringify({ "name": "PrePrintTrack", "address": prePrintTrack.address }, undefined, 2)
+    JSON.stringify([{ "name": "PrePrintTrack", "address": prePrintTrack.address }], undefined, 2)
   );
 
   const PrePrintTrackArtifact = artifacts.readArtifactSync("PrePrintTrack");
@@ -71,7 +71,7 @@ function saveDeSciFrontendFiles(contracts) {
   }
 
   contractAddresses = contracts.map((contract) => {
-    return {"name": contract.name(), "address": contract.address}
+    return {"name": contract.name, "address": contract.contract.address}
   });
 
   fs.writeFileSync(
