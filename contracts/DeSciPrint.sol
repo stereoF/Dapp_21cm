@@ -117,12 +117,22 @@ contract DeSciPrint is DeSciRoleModel {
     string[] public deSciFileCIDs;
 
     event Submit(
-        string _fileCID,
+        string fileCID,
         string keyInfo,
-        address indexed _submitAddress,
-        uint256 indexed _submitTime,
-        string _description,
-        uint256 _amount
+        address indexed submitAddress,
+        uint256 indexed submitTime,
+        string description,
+        uint256 amount
+    );
+
+    event ReplyNew(
+        string prevCID,
+        string fileCID,
+        string keyInfo,
+        address indexed submitAddress,
+        uint256 indexed submitTime,
+        string description,
+        uint256 amount
     );
 
     function submitForReview(
@@ -394,6 +404,15 @@ contract DeSciPrint is DeSciRoleModel {
         ProcessInfo storage processInfo = deSciProcess[_fileCID];
         processInfo.editor = preProcess.editor;
         _reviewerAssign(_fileCID, preProcess.reviewers);
+        emit ReplyNew(
+            preFileCID,
+            _fileCID,
+            _keyInfo,
+            msg.sender,
+            block.timestamp,
+            _description,
+            _amount
+        );
     }
 
     function removeReviewer(string memory fileCID, address[] memory _reviewers) 

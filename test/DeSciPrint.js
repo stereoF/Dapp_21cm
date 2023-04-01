@@ -159,7 +159,7 @@ describe("DeSciPrint contract", function () {
             expect (await hardhatDeSciPrint.submitForReview(paper3.paperCID, paper3.keyInfo, paper3.description, paper3.amount,
                 { value: paper3.amount.add(minGasCost) }))
                 .to.emit(hardhatDeSciPrint, 'submit')
-                .withArgs(paper3.paperCID, paper3.keyInfo, address2.address, blockTime, paper3.description);
+                .withArgs(paper3.paperCID, paper3.keyInfo, address2.address, blockTime, paper3.description, paper3.amount);
         });
 
         it("Get all prints in process by editor", async function () {
@@ -463,6 +463,33 @@ describe("DeSciPrint contract", function () {
 
             PrePrintInfo = await hardhatDeSciPrint.deSciPrints(paper2.paperCID);
             expect(PrePrintInfo.nextCID).to.eq(newPaper.paperCID);
+
+        });
+
+        it("Should emit event when reply new paper", async function(){
+            const { hardhatDeSciPrint, paper2, reviewer1, reviewer2, address2, minGasCost } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper2.paperCID, comment, 1);
+            comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer2).reviewPrint(paper2.paperCID, comment, 1);
+
+            const blockTime = Date.now() + 5;
+            await time.setNextBlockTimestamp(blockTime);
+
+            const newPaper = {
+                paperCID: "QmakBV63npN4DLlYheAq9jpn9yLqtGi3caSUtJ8GCUQ27H",
+                keyInfo: 'new paper key info',
+                description: 'new paper description',
+                amount: ethers.utils.parseEther('1.7', 'ether')
+            };
+
+            expect (await hardhatDeSciPrint.connect(address2).replyNew(paper2.paperCID, newPaper.paperCID, newPaper.keyInfo, newPaper.description, newPaper.amount,
+                {value: minGasCost.add(newPaper.amount)}))
+                .to.emit(hardhatDeSciPrint, 'ReplyNew')
+                .withArgs(paper2.paperCID, newPaper.paperCID, newPaper.keyInfo, address2.address, blockTime, newPaper.description, newPaper.amount);
 
         });
 
