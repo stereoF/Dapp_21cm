@@ -114,7 +114,20 @@ contract DeSciPrint is DeSciRoleModel {
     mapping(string => ProcessInfo) public deSciProcess;
     mapping(string => mapping(address => ReviewInfo)) public deSciReviews;
     mapping(string => mapping(address => uint256)) public reviewerIndex;
-    string[] public deSciFileCIDs;
+
+    // string[] public deSciFileCIDs;
+    uint256 public deSciPrintCnt;
+    mapping(uint256 => string) public deSciPrintCIDMap;
+
+    function deSciFileCIDs (uint256 _startIndex, uint256 _endIndex) public view returns (string[] memory) {
+        require(_startIndex <= _endIndex, "Invalid index range");
+        require(_endIndex < deSciPrintCnt, "Index out of range");
+        string[] memory cids = new string[](_endIndex - _startIndex + 1);
+        for (uint256 i = _startIndex; i <= _endIndex; i++) {
+            cids[i - _startIndex] = deSciPrintCIDMap[i];
+        }
+        return cids;
+    }
 
     event Submit(
         string fileCID,
@@ -155,7 +168,9 @@ contract DeSciPrint is DeSciRoleModel {
         print.submitTime = _submitTime;
         print.keyInfo = _keyInfo;
         process.donate = _amount;
-        deSciFileCIDs.push(_fileCID);
+        // deSciFileCIDs.push(_fileCID);
+        deSciPrintCIDMap[deSciPrintCnt] = _fileCID;
+        deSciPrintCnt++;
 
         emit Submit(
             _fileCID,
@@ -168,20 +183,23 @@ contract DeSciPrint is DeSciRoleModel {
 
     }
 
-    function printsPool(ProcessStatus _status) public view returns (string[] memory printsPool_) {
+    function printsPool(ProcessStatus _status, uint256 _startIndex, uint256 _endIndex) public view returns (string[] memory printsPool_) {
         uint256 resultCount;
 
-        for (uint256 i = 0; i < deSciFileCIDs.length; i++) {
-            if (deSciProcess[deSciFileCIDs[i]].processStatus == _status) {
+        string[] memory deSciFileCIDs_ = new string[](_endIndex - _startIndex + 1);
+        deSciFileCIDs_ = deSciFileCIDs(_startIndex, _endIndex);
+
+        for (uint256 i = 0; i < deSciFileCIDs_.length; i++) {
+            if (deSciProcess[deSciFileCIDs_[i]].processStatus == _status) {
                 resultCount++;  // step 1 - determine the result count
             }
         }
 
         printsPool_ = new string[](resultCount);  // step 2 - create the fixed-length array
         uint256 j;
-        for (uint256 i = 0; i < deSciFileCIDs.length; i++) {
-            if (deSciProcess[deSciFileCIDs[i]].processStatus == _status) {
-                printsPool_[j] = deSciFileCIDs[i];  // step 3 - fill the array
+        for (uint256 i = 0; i < deSciFileCIDs_.length; i++) {
+            if (deSciProcess[deSciFileCIDs_[i]].processStatus == _status) {
+                printsPool_[j] = deSciFileCIDs_[i];  // step 3 - fill the array
                 j++;
             }
         }

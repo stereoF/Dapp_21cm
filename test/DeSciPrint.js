@@ -128,7 +128,7 @@ describe("DeSciPrint contract", function () {
                 submitPrintsFixture
             );
 
-            expect(await hardhatDeSciPrint.deSciFileCIDs(1)).to.equal(paper2.paperCID);
+            expect(await hardhatDeSciPrint.deSciPrintCIDMap(1)).to.equal(paper2.paperCID);
 
             printInfo = await hardhatDeSciPrint.deSciPrints(paper2.paperCID);
             expect(printInfo.submitAddress).to.eq(address2.address);
@@ -167,7 +167,8 @@ describe("DeSciPrint contract", function () {
                 submitPrintsFixture
             );
 
-            paperCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0);
+            let printCnt = await hardhatDeSciPrint.deSciPrintCnt();
+            paperCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0, 0, printCnt-1);
             expect(paperCIDs).to.eql([paper1.paperCID, paper2.paperCID]);
 
         });
@@ -177,16 +178,17 @@ describe("DeSciPrint contract", function () {
                 submitPrintsFixture
             );
 
-            let [paperCID1, paperCID2] = await hardhatDeSciPrint.connect(editor1).printsPool(0);
+            let printCnt = await hardhatDeSciPrint.deSciPrintCnt();
+            let [paperCID1, paperCID2] = await hardhatDeSciPrint.connect(editor1).printsPool(0, 0, printCnt-1);
             let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
             const blockTime = Date.now() + 5;
             await time.setNextBlockTimestamp(blockTime);
             await hardhatDeSciPrint.connect(editor1).editorReject(paperCID1, comment)
 
-            pendingCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0);
+            pendingCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0, 0, printCnt-1);
             expect(pendingCIDs).to.eql([paperCID2]);
 
-            rejectedCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(2);
+            rejectedCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(2, 0, printCnt-1);
             expect(rejectedCIDs).to.eql([paperCID1]);
 
             processInfo = await hardhatDeSciPrint.deSciProcess(paperCID1);
@@ -227,10 +229,12 @@ describe("DeSciPrint contract", function () {
                 assignReviewersFixture
             );
 
-            paperCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0);
+            let printCnt = await hardhatDeSciPrint.deSciPrintCnt();
+
+            paperCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0, 0, printCnt-1);
             expect(paperCIDs).to.eql([]);
 
-            paperCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(1);
+            paperCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(1, 0, printCnt-1);
             expect(paperCIDs).to.eql([paper1.paperCID, paper2.paperCID]);
 
         });

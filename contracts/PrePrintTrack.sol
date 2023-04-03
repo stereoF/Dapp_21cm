@@ -8,7 +8,20 @@ contract PrePrintTrack {
         owner = payable(msg.sender);
     }
 
-    string[] public prePrintCIDs;
+    // string[] public prePrintCIDs;
+    uint256 public prePrintCnt;
+
+    mapping(uint256 => string) public prePrintCIDMap;
+
+    function prePrintCIDs (uint256 _startIndex, uint256 _endIndex) public view returns (string[] memory) {
+        require(_startIndex <= _endIndex, "Invalid index range");
+        require(_endIndex < prePrintCnt, "Index out of range");
+        string[] memory cids = new string[](_endIndex - _startIndex + 1);
+        for (uint256 i = _startIndex; i <= _endIndex; i++) {
+            cids[i - _startIndex] = prePrintCIDMap[i];
+        }
+        return cids;
+    }
 
     struct PrePrintInfo {
         address submitAddress;
@@ -25,7 +38,7 @@ contract PrePrintTrack {
         uint256 indexed _submitTime,
         string _description
     );
-    
+
     event OwnershipTransferred(
         address indexed previousOwner,
         address indexed newOwner
@@ -62,7 +75,9 @@ contract PrePrintTrack {
         uint256 _submitTime = block.timestamp;
         address _submitAddress = msg.sender;
 
-        prePrintCIDs.push(_fileCID);
+        // prePrintCIDs.push(_fileCID);
+        prePrintCIDMap[prePrintCnt] = _fileCID;
+        prePrintCnt++;
         prePrints[_fileCID] = PrePrintInfo({
             submitAddress: _submitAddress,
             submitTime: _submitTime,

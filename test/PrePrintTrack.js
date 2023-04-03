@@ -49,12 +49,38 @@ describe("PrePrintTrack contract", function () {
       
       await hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description');
 
-      expect(await hardhatPrePrintTrack.prePrintCIDs(0)).to.equal(paperCID);
+      // expect(await hardhatPrePrintTrack.prePrintCIDs(0,0)).to.equal(paperCID);
+      let prePrintCnt = await hardhatPrePrintTrack.prePrintCnt();
+      expect(prePrintCnt).to.equal(1);
+      expect(await hardhatPrePrintTrack.prePrintCIDMap(prePrintCnt-1)).to.equal(paperCID);
 
       let prePrintInfo = await hardhatPrePrintTrack.prePrints(paperCID);
       expect(prePrintInfo.submitAddress).to.equal(owner.address);
       expect(prePrintInfo.keyInfo).to.equal(keyInfo);
       expect(prePrintInfo.submitTime).to.equal(blockTime);
+
+    });
+
+    it("should get all CIDs by index range", async function(){
+      const { hardhatPrePrintTrack, owner } = await loadFixture(
+        deployPrePrintTrackFixture
+      );
+
+      const paperCIDs = [
+        "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyH1",
+        "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyH2",
+        "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyH3"
+      ]
+      const keyInfo = 'test key information'
+
+      await hardhatPrePrintTrack.submit(paperCIDs[0], keyInfo, 'test description');
+      await hardhatPrePrintTrack.submit(paperCIDs[1], keyInfo, 'test description');
+      await hardhatPrePrintTrack.submit(paperCIDs[2], keyInfo, 'test description');
+
+      let prePrintCnt = await hardhatPrePrintTrack.prePrintCnt();
+      expect(prePrintCnt).to.equal(3);
+      let prePrintCIDs = await hardhatPrePrintTrack.prePrintCIDs(0,prePrintCnt-1);
+      expect(prePrintCIDs).to.eql(paperCIDs);
 
     });
 
