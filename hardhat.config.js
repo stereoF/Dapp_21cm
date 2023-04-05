@@ -36,8 +36,8 @@ module.exports = {
       chainId: 1337 // We set 1337 to make interacting with MetaMask simpler
     },
     ganache: {
-      url: "http://172.28.160.1:7545",
-      accounts: ["0x317240cc72c31504a78a01bda8ce3f466105406d5f19bb49f02ccecc649e39c2"]
+      url: "http://172.27.192.1:7545",
+      accounts: ["0x93030c2db7ee1564b43693f99776a27112059dcd9c5cec8052f13444c991e0e7"]
     },
     // goerli: {
     //   url: `https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,

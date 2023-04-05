@@ -80,6 +80,17 @@ describe("DeSciRoleModel contract", function () {
 
     });
 
+    it("add, remove, add editors", async function () {
+      const { hardhatDeSciRoleModel, editor1, editor2, address2 } = await loadFixture(
+        deployDeSciRoleModelFixture
+      );
+
+      await hardhatDeSciRoleModel.pushEditors([editor1.address, editor2.address, address2.address]);
+      await hardhatDeSciRoleModel.removeEditor([editor1.address, editor2.address, address2.address]);
+      await hardhatDeSciRoleModel.pushEditors([editor1.address, editor2.address, address2.address]);
+
+    });
+
   });
 
 });

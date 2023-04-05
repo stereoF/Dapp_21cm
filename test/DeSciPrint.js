@@ -93,6 +93,19 @@ describe("DeSciPrint contract", function () {
 
         });
 
+        it("add, remove, add reviewers", async function () {
+            const { hardhatDeSciPrint, owner, editor1, reviewer1, reviewer2, reviewer3, paper1 } = await loadFixture(
+                submitPrintsFixture
+            );
+
+            await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, 
+                [reviewer1.address, reviewer2.address, reviewer3.address]);
+            await hardhatDeSciPrint.connect(editor1).removeReviewer(paper1.paperCID, [reviewer1.address, reviewer2.address, reviewer3.address]);
+            await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, 
+                [reviewer1.address, reviewer2.address, reviewer3.address]);
+      
+        });
+
         it("change editor", async function () {
             const { hardhatDeSciPrint, owner, editor1, editor2, reviewer1, paper1 } = await loadFixture(
                 submitPrintsFixture

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 import "./DeSciRoleModel.sol";
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 contract DeSciPrint is DeSciRoleModel {
 
@@ -341,15 +341,23 @@ contract DeSciPrint is DeSciRoleModel {
         }
     }
 
+    // function _isReviewer(string memory fileCID, address reviewer) public view returns (bool) {
+    //     ProcessInfo storage process = deSciProcess[fileCID];
+    //     bool canReview = false;
+    //     address[] memory reviewers = process.reviewers;
+    //     for (uint256 i = 0; i < reviewers.length; i++) {
+    //         if (reviewers[i] == reviewer) {
+    //             canReview = true;
+    //             break;
+    //         }
+    //     }
+    //     return canReview;
+    // }
+
     function _isReviewer(string memory fileCID, address reviewer) public view returns (bool) {
-        ProcessInfo storage process = deSciProcess[fileCID];
         bool canReview = false;
-        address[] memory reviewers = process.reviewers;
-        for (uint256 i = 0; i < reviewers.length; i++) {
-            if (reviewers[i] == reviewer) {
-                canReview = true;
-                break;
-            }
+        if (reviewerIndex[fileCID][reviewer] != 0) {
+            canReview = true;
         }
         return canReview;
     }
@@ -451,8 +459,8 @@ contract DeSciPrint is DeSciRoleModel {
                 address lastReviewer = reviewers[reviewers.length - 1];
                 reviewers[index - 1] = lastReviewer;
                 reviewers.pop();
-                reviewerIndex[fileCID][_reviewers[i]] = 0;
                 reviewerIndex[fileCID][lastReviewer] = index;
+                reviewerIndex[fileCID][_reviewers[i]] = 0;
             }
         }
         processInfo.editorActCnt++;
