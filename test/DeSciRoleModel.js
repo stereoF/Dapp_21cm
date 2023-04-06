@@ -62,7 +62,7 @@ describe("DeSciRoleModel contract", function () {
         deployDeSciRoleModelFixture
       );
 
-      const blockTime = Date.now() + 5;
+      const blockTime = Date.now() + 2;
       await time.setNextBlockTimestamp(blockTime);
 
       expect(await hardhatDeSciRoleModel.pushEditors[editor1.address, editor2.address])
@@ -95,7 +95,7 @@ describe("DeSciRoleModel contract", function () {
 
       await hardhatDeSciRoleModel.pushEditors([editor1.address, editor2.address, address2.address]);
 
-      const blockTime = Date.now() + 5;
+      const blockTime = Date.now() + 2;
       await time.setNextBlockTimestamp(blockTime);
 
       expect(await hardhatDeSciRoleModel.removeEditor([editor1.address, editor2.address]))

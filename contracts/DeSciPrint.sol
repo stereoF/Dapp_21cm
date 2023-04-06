@@ -181,6 +181,27 @@ contract DeSciPrint is DeSciRoleModel {
         address[] _newReviewers
     );
 
+    event ChangePaperEditor(
+        string indexed _fileCID,
+        address _editor,
+        uint256 indexed _changeTime
+    );
+
+    event Comment(
+        address indexed commentator,
+        uint256 indexed commentTime,
+        string indexed targetCID,
+        string commentCID,
+        ReviewerStatus status
+    );
+
+    event ReplyComment(
+        string indexed fileCID,
+        address indexed toCommentator,
+        uint256 indexed replyTime,
+        string replyCID
+    );
+
     function submitForReview(
         string memory _fileCID,
         string memory _keyInfo,
@@ -335,6 +356,12 @@ contract DeSciPrint is DeSciRoleModel {
 
         if (processInfo.editor == address(0)) {
             processInfo.editor = msg.sender;
+
+            emit ChangePaperEditor(
+                fileCID,
+                msg.sender,
+                block.timestamp
+            );
         }
 
         _reviewerAssign(fileCID, reviewers_);
@@ -379,6 +406,14 @@ contract DeSciPrint is DeSciRoleModel {
         if (processInfo.editorActCnt <= editorActLimit) {
             _assignToken(msg.sender, 6, fileCID);
         }
+
+        emit Comment(
+            msg.sender,
+            block.timestamp,
+            fileCID,
+            comment_,
+            ReviewerStatus.Reject
+        );
     }
 
     // function _isReviewer(string memory fileCID, address reviewer) public view returns (bool) {
@@ -433,6 +468,14 @@ contract DeSciPrint is DeSciRoleModel {
             bonusIndex = 2;
         }
         _assignToken(msg.sender, bonusIndex, fileCID);
+
+        emit Comment(
+            msg.sender,
+            block.timestamp,
+            fileCID,
+            reviewCID,
+            status
+        );
     }
 
     modifier onlyAuthor(string memory fileCID) {
@@ -450,6 +493,13 @@ contract DeSciPrint is DeSciRoleModel {
         require(reviewInfo.reviewerStatus != ReviewerStatus.Submit, "Cannot reply before comment submitted");
         reviewInfo.reply = replyCID;
         reviewInfo.replyTime = block.timestamp;
+
+        emit ReplyComment(
+            fileCID,
+            reviewer,
+            block.timestamp,
+            replyCID
+        );
     }
 
     function replyNew(
@@ -521,6 +571,12 @@ contract DeSciPrint is DeSciRoleModel {
         onlyOwner
     {
         deSciProcess[fileCID].editor = newEditor;
+
+        emit ChangePaperEditor(
+                fileCID,
+                newEditor,
+                block.timestamp
+        );
     }
 
     receive() external payable {}

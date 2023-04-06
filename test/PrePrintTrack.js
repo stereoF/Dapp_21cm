@@ -44,7 +44,7 @@ describe("PrePrintTrack contract", function () {
       const paperCID = "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo";
       const keyInfo = 'test key information'
 
-      const blockTime = Date.now() + 5;
+      const blockTime = Date.now() + 2;
       await time.setNextBlockTimestamp(blockTime);
       
       await hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description');
@@ -92,7 +92,7 @@ describe("PrePrintTrack contract", function () {
       const paperCID = "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo";
       const keyInfo = 'test key information'
 
-      const blockTime = Date.now() + 5;
+      const blockTime = Date.now() + 2;
       await time.setNextBlockTimestamp(blockTime);
 
       expect(await hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description'))
