@@ -456,6 +456,20 @@ describe("DeSciPrint contract", function () {
             expect(processInfo.processStatus).to.eq(7);
         });
 
+        it(">= 2 pass then emit event", async function () {
+            const { hardhatDeSciPrint, paper1, reviewer1, reviewer2 } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper1.paperCID, comment, 3);
+
+            comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs5';
+            expect(await hardhatDeSciPrint.connect(reviewer2).reviewPrint(paper1.paperCID, comment, 3))
+                .to.emit(hardhatDeSciPrint, "ChangePaperStatus")
+                .withArgs(paper1.paperCID, 7);
+        });
+
         it(">= 2 reject then reject", async function () {
             const { hardhatDeSciPrint, paper1, reviewer1, reviewer2, reviewer3 } = await loadFixture(
                 assignReviewersFixture
@@ -471,6 +485,20 @@ describe("DeSciPrint contract", function () {
             expect(processInfo.processStatus).to.eq(3);
         });
 
+        it(">= 2 reject then emit event", async function () {
+            const { hardhatDeSciPrint, paper1, reviewer1, reviewer2 } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper1.paperCID, comment, 2);
+
+            comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs5';
+            expect(await hardhatDeSciPrint.connect(reviewer2).reviewPrint(paper1.paperCID, comment, 2))
+                .to.emit(hardhatDeSciPrint, "ChangePaperStatus")
+                .withArgs(paper1.paperCID, 3);
+        });
+
         it("Need append reviewer if 1 reject among 2 reviewers", async function () {
             const { hardhatDeSciPrint, paper2, reviewer1 } = await loadFixture(
                 assignReviewersFixture
@@ -481,6 +509,17 @@ describe("DeSciPrint contract", function () {
 
             processInfo = await hardhatDeSciPrint.deSciProcess(paper2.paperCID);
             expect(processInfo.processStatus).to.eq(4);
+        });
+
+        it("Emit event if 1 reject among 2 reviewers", async function () {
+            const { hardhatDeSciPrint, paper2, reviewer1 } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            expect(await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper2.paperCID, comment, 2))
+                .to.emit(hardhatDeSciPrint, "ChangePaperStatus")
+                .withArgs(paper2.paperCID, 4);
         });
 
         it("Need revise if 1 revise, 1 pass and 1 reject", async function () {
@@ -513,6 +552,19 @@ describe("DeSciPrint contract", function () {
             processInfo = await hardhatDeSciPrint.deSciProcess(paper2.paperCID);
             expect(processInfo.processStatus).to.eq(5);
 
+        });
+
+        it("Emit event if 2 revise", async function () {
+            const { hardhatDeSciPrint, paper2, reviewer1, reviewer2 } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper2.paperCID, comment, 1);
+            comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            expect(await hardhatDeSciPrint.connect(reviewer2).reviewPrint(paper2.paperCID, comment, 1))
+                .to.emit(hardhatDeSciPrint, "ChangePaperStatus")
+                .withArgs(paper2.paperCID, 5);
         });
 
         it("Need revise if 2 revise and 1 reject", async function () {

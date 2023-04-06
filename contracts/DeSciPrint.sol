@@ -202,6 +202,13 @@ contract DeSciPrint is DeSciRoleModel {
         string replyCID
     );
 
+
+    event ChangePaperStatus(
+        string indexed fileCID,
+        uint256 indexed replyTime,
+        ProcessStatus status
+    );
+
     function submitForReview(
         string memory _fileCID,
         string memory _keyInfo,
@@ -320,6 +327,8 @@ contract DeSciPrint is DeSciRoleModel {
                 process.processStatus = ProcessStatus.ReviewerAssigned;
             }
         }
+
+        emit ChangePaperStatus(fileCID, block.timestamp, process.processStatus);
     }
 
     function _reviewerAssign(string memory fileCID, address[] memory reviewers_)
