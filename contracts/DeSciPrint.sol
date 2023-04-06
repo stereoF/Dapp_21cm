@@ -14,7 +14,18 @@ contract DeSciPrint is DeSciRoleModel {
     // minGasCost, editorActGas, reviewerActGas, minWithdrawValue, minDonate
     uint256[5] public gasFee = [0.05 ether, 0.02 ether, 0.007 ether, 0.001 ether, 2000 gwei];
 
+    enum ValueType { gasFee, bonus }
+
+    event ChangeValue(
+        ValueType valueType,
+        uint256 indexed changeTime,
+        uint256 indexed index,
+        uint256 oldAmount,
+        uint256 newAmount
+    );
+
     function setGasFee(uint256 amount, uint8 index) public onlyOwner {
+        emit ChangeValue(ValueType.gasFee, block.timestamp, index, gasFee[index], amount);
         gasFee[index] = amount;
         require(gasFee[0] >= gasFee[1] + 3*gasFee[2], 'The minGas should cover editor and reviewer cost');
     }
@@ -31,6 +42,7 @@ contract DeSciPrint is DeSciRoleModel {
     }
 
     function setBonusWeight(uint256 amount, uint8 index) public onlyOwner {
+        emit ChangeValue(ValueType.bonus, block.timestamp, index, _bonusWeight[index], amount);
         _bonusWeight[index] = amount;
     }
 

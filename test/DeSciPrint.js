@@ -93,6 +93,42 @@ describe("DeSciPrint contract", function () {
 
         });
 
+        it("Should emit event when change gas fee", async function () {
+            const { hardhatDeSciPrint } = await loadFixture(
+                deployDeSciPrintFixture
+            );
+
+
+            const oldMinGasCost = await hardhatDeSciPrint.gasFee(0);
+            const newMinGasCost = ethers.utils.parseEther('0.4', 'ether');
+            const blockTime = Date.now() + 5;
+            await time.setNextBlockTimestamp(blockTime);
+
+            await expect(hardhatDeSciPrint.setGasFee(newMinGasCost, 0))
+                .to.emit(hardhatDeSciPrint, 'ChangeValue')
+                .withArgs(0, blockTime, 0, oldMinGasCost, newMinGasCost);
+        });
+
+        it("Change Bonus Weight", async function () {
+            const { hardhatDeSciPrint, owner } = await loadFixture(
+                deployDeSciPrintFixture
+            );
+
+            const bonusWeight = await hardhatDeSciPrint.bonusWeight();
+            expect(bonusWeight).to.deep.equal([3,6,3,3,1,1,1,2,5]);
+
+            const tx = await hardhatDeSciPrint.connect(owner).setBonusWeight(7, 1);
+            const receipt = await tx.wait()
+            expect(receipt.events[0].event).to.equal("ChangeValue");
+            expect(receipt.events[0].args.valueType).to.equal(1);
+            expect(receipt.events[0].args.index).to.equal(1);
+            expect(receipt.events[0].args.oldAmount).to.equal(6);
+            expect(receipt.events[0].args.newAmount).to.equal(7);
+
+            expect(await hardhatDeSciPrint.bonusWeight()).to.deep.equal([3,7,3,3,1,1,1,2,5]);
+
+        });
+
         it("add, remove, add reviewers", async function () {
             const { hardhatDeSciPrint, owner, editor1, reviewer1, reviewer2, reviewer3, paper1 } = await loadFixture(
                 submitPrintsFixture

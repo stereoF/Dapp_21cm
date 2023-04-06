@@ -66,7 +66,7 @@ describe("DeSciRoleModel contract", function () {
       await time.setNextBlockTimestamp(blockTime);
 
       expect(await hardhatDeSciRoleModel.pushEditors[editor1.address, editor2.address])
-        .to.emit(hardhatDeSciRoleModel, "changeEditors")
+        .to.emit(hardhatDeSciRoleModel, "ChangeEditors")
         .withArgs(blockTime, 0, [], [editor1.address, editor2.address])
 
     });
@@ -99,7 +99,7 @@ describe("DeSciRoleModel contract", function () {
       await time.setNextBlockTimestamp(blockTime);
 
       expect(await hardhatDeSciRoleModel.removeEditor([editor1.address, editor2.address]))
-        .to.emit(hardhatDeSciRoleModel, "changeEditors")
+        .to.emit(hardhatDeSciRoleModel, "ChangeEditors")
         .withArgs(blockTime, 1, [editor1.address, editor2.address, address2.address], [editor1.address, editor2.address])
 
     });
