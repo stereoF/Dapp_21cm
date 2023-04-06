@@ -50,7 +50,7 @@ function savePrePrintFrontendFiles(prePrintTrack) {
   fs.writeFileSync(
     path.join(contractsDir, "contract-address.json"),
     // JSON.stringify({ PrePrintTrack: prePrintTrack.address }, undefined, 2)
-    JSON.stringify([{ "name": "PrePrintTrack", "address": prePrintTrack.address }], undefined, 2)
+    JSON.stringify([{ "name": "PrePrintTrack", "address": prePrintTrack.address, "blockNumber": prePrintTrack.deployTransaction.blockNumber }], undefined, 2)
   );
 
   const PrePrintTrackArtifact = artifacts.readArtifactSync("PrePrintTrack");
@@ -71,7 +71,7 @@ function saveDeSciFrontendFiles(contracts) {
   }
 
   contractAddresses = contracts.map((contract) => {
-    return {"name": contract.name, "address": contract.contract.address}
+    return {"name": contract.name, "address": contract.contract.address, "blockNumber": contract.contract.deployTransaction.blockNumber}
   });
 
   fs.writeFileSync(
