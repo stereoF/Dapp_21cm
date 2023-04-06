@@ -10,8 +10,18 @@ contract DeSciRoleModel {
     mapping(address => uint256) private _editorsIndex;
     // mapping(address => uint256) private _reviewersIndex;
     event OwnershipTransferred(
+        uint256 indexed _changeTime,
         address indexed previousOwner,
         address indexed newOwner
+    );
+
+    enum changeEditorsAction { push, remove }
+
+    event changeEditors(
+        uint256 indexed _changeTime,
+        changeEditorsAction _action,
+        address[] _oldEditors,
+        address[] _onEditors
     );
 
     /**
@@ -20,7 +30,7 @@ contract DeSciRoleModel {
      */
     constructor() {
         _owner = payable(msg.sender);
-        emit OwnershipTransferred(address(0), _owner);
+        emit OwnershipTransferred(block.timestamp, address(0), _owner);
     }
 
     /**
@@ -63,7 +73,7 @@ contract DeSciRoleModel {
      */
     function _transferOwnership(address payable newOwner) internal {
         require(newOwner != address(0));
-        emit OwnershipTransferred(_owner, newOwner);
+        emit OwnershipTransferred(block.timestamp, _owner, newOwner);
         _owner = newOwner;
     }
 
@@ -92,6 +102,12 @@ contract DeSciRoleModel {
     }
 
     function pushEditors(address[] memory editorAddrs) public onlyOwner {
+        emit changeEditors(
+            block.timestamp,
+            changeEditorsAction.push,
+            _editors,
+            editorAddrs
+        );
         address addr;
         uint256 index;
         for (uint256 i = 0; i < editorAddrs.length; i++) {
@@ -104,6 +120,12 @@ contract DeSciRoleModel {
     }
 
     function removeEditor(address[] memory editorAddrs) public onlyOwner {
+        emit changeEditors(
+            block.timestamp,
+            changeEditorsAction.remove,
+            _editors,
+            editorAddrs
+        );
         for (uint256 i = 0; i < editorAddrs.length; i++) {
             uint256 index = _editorsIndex[editorAddrs[i]];
             if (index > 0) {
