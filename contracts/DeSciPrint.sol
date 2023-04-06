@@ -52,7 +52,14 @@ contract DeSciPrint is DeSciRoleModel {
 
     uint8 public editorActLimit = 4;
 
+    event ChangeEditorActLimit(
+        uint256 indexed changeTime,
+        uint256 oldValue,
+        uint256 newValue
+    );
+
     function setEditorActLimit(uint8 limitCnt) public onlyOwner {
+        emit ChangeEditorActLimit(block.timestamp, editorActLimit, limitCnt);
         editorActLimit = limitCnt;
     }
     
@@ -63,6 +70,12 @@ contract DeSciPrint is DeSciRoleModel {
     address[] balanceAddrs;
     mapping(address => uint256) balanceIndex;
 
+    event ChangeToken(
+        address indexed balanceOwner,
+        uint256 finalAmount,
+        uint256 indexed changeTime
+    );
+
     function _addToken(address balanceOwner, uint256 amount) private {
         if (balanceIndex[balanceOwner] == 0 ) {
             balanceAddrs.push(balanceOwner);
@@ -70,6 +83,7 @@ contract DeSciPrint is DeSciRoleModel {
         }
         tokenBalance[balanceOwner] += amount;
         // console.log(balanceOwner, amount);
+        emit ChangeToken(balanceOwner, tokenBalance[balanceOwner], block.timestamp);
     }
 
     function _assignToken(address addr, uint8 bonusIndex, string memory fileCID) private {
@@ -158,6 +172,13 @@ contract DeSciPrint is DeSciRoleModel {
         uint256 indexed submitTime,
         string description,
         uint256 amount
+    );
+
+    event ChangeReviewers(
+        address indexed _editor,
+        uint256 indexed _changeTime,
+        string indexed _fileCID,
+        address[] _newReviewers
     );
 
     function submitForReview(
@@ -294,6 +315,13 @@ contract DeSciPrint is DeSciRoleModel {
             index = processInfo.reviewers.length;
             reviewerIndex[fileCID][addr] = index;
         }
+
+        emit ChangeReviewers(
+            msg.sender,
+            block.timestamp,
+            fileCID,
+            processInfo.reviewers
+        );
     }
 
     function reviewerAssign(string memory fileCID, address[] memory reviewers_)
@@ -479,6 +507,13 @@ contract DeSciPrint is DeSciRoleModel {
         if (processInfo.editorActCnt <= editorActLimit) {
             _assignToken(msg.sender, 5, fileCID);
         }
+
+        emit ChangeReviewers(
+            msg.sender,
+            block.timestamp,
+            fileCID,
+            processInfo.reviewers
+        );
     }
 
     function changeEditor(string memory fileCID, address newEditor)
@@ -519,6 +554,7 @@ contract DeSciPrint is DeSciRoleModel {
         require(amount > gasFee[3]);
         _clearBalance(msg.sender);
         payable(msg.sender).transfer(amount);
+        emit ChangeToken(msg.sender, tokenBalance[msg.sender], block.timestamp);
     }
 
     function getBalance() public view returns (uint256) {

@@ -15,13 +15,9 @@ contract DeSciRoleModel {
         address indexed newOwner
     );
 
-    enum ChangeEditorsAction { push, remove }
-
     event ChangeEditors(
         uint256 indexed _changeTime,
-        ChangeEditorsAction _action,
-        address[] _oldEditors,
-        address[] _onEditors
+        address[] _newEditors
     );
 
     /**
@@ -102,12 +98,7 @@ contract DeSciRoleModel {
     }
 
     function pushEditors(address[] memory editorAddrs) public onlyOwner {
-        emit ChangeEditors(
-            block.timestamp,
-            ChangeEditorsAction.push,
-            _editors,
-            editorAddrs
-        );
+
         address addr;
         uint256 index;
         for (uint256 i = 0; i < editorAddrs.length; i++) {
@@ -117,15 +108,14 @@ contract DeSciRoleModel {
             index = _editors.length;
             _editorsIndex[addr] = index;
         }
+
+        emit ChangeEditors(
+            block.timestamp,
+            _editors
+        );
     }
 
     function removeEditor(address[] memory editorAddrs) public onlyOwner {
-        emit ChangeEditors(
-            block.timestamp,
-            ChangeEditorsAction.remove,
-            _editors,
-            editorAddrs
-        );
         for (uint256 i = 0; i < editorAddrs.length; i++) {
             uint256 index = _editorsIndex[editorAddrs[i]];
             if (index > 0) {
@@ -136,6 +126,11 @@ contract DeSciRoleModel {
                 _editorsIndex[editorAddrs[i]] = 0;
             }
         }
+        
+        emit ChangeEditors(
+            block.timestamp,
+            _editors
+        );
     }
 
 }
