@@ -156,15 +156,6 @@ contract DeSciPrint is DeSciRoleModel {
     }
 
     event Submit(
-        string fileCID,
-        string keyInfo,
-        address indexed submitAddress,
-        uint256 indexed submitTime,
-        string description,
-        uint256 amount
-    );
-
-    event ReplyNew(
         string prevCID,
         string fileCID,
         string keyInfo,
@@ -173,6 +164,16 @@ contract DeSciPrint is DeSciRoleModel {
         string description,
         uint256 amount
     );
+
+    // event ReplyNew(
+    //     string prevCID,
+    //     string fileCID,
+    //     string keyInfo,
+    //     address indexed submitAddress,
+    //     uint256 indexed submitTime,
+    //     string description,
+    //     uint256 amount
+    // );
 
     event ChangeReviewers(
         address indexed _editor,
@@ -234,6 +235,7 @@ contract DeSciPrint is DeSciRoleModel {
         deSciPrintCnt++;
 
         emit Submit(
+            "",
             _fileCID,
             _keyInfo,
             _submitAddress,
@@ -529,7 +531,7 @@ contract DeSciPrint is DeSciRoleModel {
         ProcessInfo storage processInfo = deSciProcess[_fileCID];
         processInfo.editor = preProcess.editor;
         _reviewerAssign(_fileCID, preProcess.reviewers);
-        emit ReplyNew(
+        emit Submit(
             preFileCID,
             _fileCID,
             _keyInfo,

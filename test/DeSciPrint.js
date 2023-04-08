@@ -266,7 +266,7 @@ describe("DeSciPrint contract", function () {
             expect (await hardhatDeSciPrint.submitForReview(paper3.paperCID, paper3.keyInfo, paper3.description, paper3.amount,
                 { value: paper3.amount.add(minGasCost) }))
                 .to.emit(hardhatDeSciPrint, 'submit')
-                .withArgs(paper3.paperCID, paper3.keyInfo, address2.address, blockTime, paper3.description, paper3.amount);
+                .withArgs("", paper3.paperCID, paper3.keyInfo, address2.address, blockTime, paper3.description, paper3.amount);
         });
 
         it("Get all prints in process by editor", async function () {
@@ -701,7 +701,7 @@ describe("DeSciPrint contract", function () {
 
             expect (await hardhatDeSciPrint.connect(address2).replyNew(paper2.paperCID, newPaper.paperCID, newPaper.keyInfo, newPaper.description, newPaper.amount,
                 {value: minGasCost.add(newPaper.amount)}))
-                .to.emit(hardhatDeSciPrint, 'ReplyNew')
+                .to.emit(hardhatDeSciPrint, 'Submit')
                 .withArgs(paper2.paperCID, newPaper.paperCID, newPaper.keyInfo, address2.address, blockTime, newPaper.description, newPaper.amount);
 
         });
