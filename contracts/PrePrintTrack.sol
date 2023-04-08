@@ -32,11 +32,11 @@ contract PrePrintTrack {
     mapping(string => PrePrintInfo) public prePrints;
 
     event Submit(
-        string _fileCID,
+        string fileCID,
         string keyInfo,
-        address indexed _submitAddress,
-        uint256 indexed _submitTime,
-        string _description
+        address indexed submitAddress,
+        uint256 indexed submitTime,
+        string description
     );
 
     event OwnershipTransferred(
