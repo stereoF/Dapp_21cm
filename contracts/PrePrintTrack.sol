@@ -13,7 +13,10 @@ contract PrePrintTrack {
 
     mapping(uint256 => string) public prePrintCIDMap;
 
-    function prePrintCIDs (uint256 _startIndex, uint256 _endIndex) public view returns (string[] memory) {
+    function prePrintCIDs(
+        uint256 _startIndex,
+        uint256 _endIndex
+    ) public view returns (string[] memory) {
         require(_startIndex <= _endIndex, "Invalid index range");
         require(_endIndex < prePrintCnt, "Index out of range");
         string[] memory cids = new string[](_endIndex - _startIndex + 1);
@@ -21,6 +24,35 @@ contract PrePrintTrack {
             cids[i - _startIndex] = prePrintCIDMap[i];
         }
         return cids;
+    }
+
+    function getAuthorPapers(
+        address _authorAddress,
+        uint256 _startIndex,
+        uint256 _endIndex
+    ) external view returns (string[] memory authorPapers_) {
+        string[] memory printsPool_ = prePrintCIDs(
+            _startIndex,
+            _endIndex
+        );
+        uint256 resultCount;
+
+        for (uint256 i = 0; i < printsPool_.length; i++) {
+            if (prePrints[printsPool_[i]].submitAddress == _authorAddress) {
+                resultCount++; // step 1 - determine the result count
+            }
+        }
+
+        authorPapers_ = new string[](resultCount); // step 2 - create the fixed-length array
+        uint256 j;
+        for (uint256 i = 0; i < printsPool_.length; i++) {
+            if (prePrints[printsPool_[i]].submitAddress == _authorAddress) {
+                authorPapers_[j] = printsPool_[i]; // step 3 - fill the array
+                j++;
+            }
+        }
+
+        return authorPapers_; // step 4 - return
     }
 
     struct PrePrintInfo {
@@ -94,7 +126,6 @@ contract PrePrintTrack {
     }
 
     receive() external payable {}
-
 
     function withdraw() public payable onlyOwner {
         require(address(this).balance > 0);
