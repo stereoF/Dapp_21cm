@@ -45,6 +45,10 @@ module.exports = {
       url: "https://rpc-mumbai.maticvigil.com",
       accounts: [MUMBAI_PRIVATE_KEY]
     },
+    polygon: {
+      url: "https://polygon-mainnet.infura.io",
+      accounts: [PRIVATE_KEY]
+    }
     // goerli: {
     //   url: `https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
     //   accounts: [GOERLI_PRIVATE_KEY]
