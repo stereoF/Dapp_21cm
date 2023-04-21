@@ -23,20 +23,6 @@ async function main() {
     // We also save the contract's artifacts and address in the frontend directory
     savePrePrintFrontendFiles(prePrintTrack);
 
-    contracts = []
-    // deSciPrintNames = ["Future", "Industrial Data Science", "PKU Space Science Review", "Complex system", "Decentralization"];
-    deSciPrintNames = ["Future"];
-    for (let i = 0; i < deSciPrintNames.length; i++) {
-      const DeSciPrint = await ethers.getContractFactory("DeSciPrint");
-      const deSciPrint = await DeSciPrint.deploy(deSciPrintNames[i]);
-      await deSciPrint.deployed();
-      contracts.push({"name": deSciPrintNames[i], "contract": deSciPrint});
-      console.log("DeSciPrint name:", deSciPrintNames[i]);
-      console.log("DeSciPrint address:", deSciPrint.address);
-    };
-
-    saveDeSciFrontendFiles(contracts);
-
   }
 
 function savePrePrintFrontendFiles(prePrintTrack) {
@@ -49,7 +35,7 @@ function savePrePrintFrontendFiles(prePrintTrack) {
   }
 
   fs.writeFileSync(
-    path.join(contractsDir, "contract-address.json"),
+    path.join(contractsDir, "mumbai-contract-address.json"),
     // JSON.stringify({ PrePrintTrack: prePrintTrack.address }, undefined, 2)
     JSON.stringify([{ "name": "PrePrintTrack", "address": prePrintTrack.address, "blockNumber": prePrintTrack.deployTransaction.blockNumber }], undefined, 2)
   );
@@ -57,33 +43,7 @@ function savePrePrintFrontendFiles(prePrintTrack) {
   const PrePrintTrackArtifact = artifacts.readArtifactSync("PrePrintTrack");
 
   fs.writeFileSync(
-    path.join(contractsDir, "PrePrintTrack.json"),
-    JSON.stringify(PrePrintTrackArtifact, null, 2)
-  );
-}
-
-function saveDeSciFrontendFiles(contracts) {
-  const fs = require("fs");
-  // const contractsDir = path.join(__dirname, "..", "frontend", "src", "contracts");
-  const contractsDir = path.join(__dirname, "..", "outputs", "contracts", "desci");
-
-  if (!fs.existsSync(contractsDir)) {
-    fs.mkdirSync(contractsDir);
-  }
-
-  contractAddresses = contracts.map((contract) => {
-    return {"name": contract.name, "address": contract.contract.address, "blockNumber": contract.contract.deployTransaction.blockNumber}
-  });
-
-  fs.writeFileSync(
-    path.join(contractsDir, "contract-address.json"),
-    JSON.stringify(contractAddresses, undefined, 2)
-  );
-
-  const PrePrintTrackArtifact = artifacts.readArtifactSync("DeSciPrint");
-
-  fs.writeFileSync(
-    path.join(contractsDir, "DeSciPrint.json"),
+    path.join(contractsDir, "mumbai-PrePrintTrack.json"),
     JSON.stringify(PrePrintTrackArtifact, null, 2)
   );
 }

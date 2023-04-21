@@ -13,7 +13,7 @@ describe("PrePrintTrack contract", function () {
     return { hardhatPrePrintTrack, owner, address2 }
   }
 
-  describe("Deployment", function() {
+  describe("Deployment", function () {
     it("Should set the right owner", async function () {
       const { hardhatPrePrintTrack, owner } = await loadFixture(
         deployPrePrintTrackFixture
@@ -23,7 +23,7 @@ describe("PrePrintTrack contract", function () {
     });
   });
 
-  describe("Management", function() {
+  describe("Management", function () {
     it("transfer the ownership", async function () {
       const { hardhatPrePrintTrack, owner, address2 } = await loadFixture(
         deployPrePrintTrackFixture
@@ -35,21 +35,24 @@ describe("PrePrintTrack contract", function () {
     });
   });
 
-  describe("Transaction", function(){
-    it("should submit the paper's CID", async function(){
+  describe("Transaction", function () {
+    it("should submit the paper's CID", async function () {
       const { hardhatPrePrintTrack, owner } = await loadFixture(
         deployPrePrintTrackFixture
       );
-      
+
       const paperCID = "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo";
       const keyInfo = 'test key information'
 
-      const blockTime = Date.now() + 15;
+      const blockTime = Date.now() + 2;
       await time.setNextBlockTimestamp(blockTime);
-      
+
       await hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description');
 
-      expect(await hardhatPrePrintTrack.prePrintCIDs(0)).to.equal(paperCID);
+      // expect(await hardhatPrePrintTrack.prePrintCIDs(0,0)).to.equal(paperCID);
+      let prePrintCnt = await hardhatPrePrintTrack.prePrintCnt();
+      expect(prePrintCnt).to.equal(1);
+      expect(await hardhatPrePrintTrack.prePrintCIDMap(prePrintCnt - 1)).to.equal(paperCID);
 
       let prePrintInfo = await hardhatPrePrintTrack.prePrints(paperCID);
       expect(prePrintInfo.submitAddress).to.equal(owner.address);
@@ -58,7 +61,30 @@ describe("PrePrintTrack contract", function () {
 
     });
 
-    it("should emit Submit events", async function() {
+    it("should get all CIDs by index range", async function () {
+      const { hardhatPrePrintTrack, owner } = await loadFixture(
+        deployPrePrintTrackFixture
+      );
+
+      const paperCIDs = [
+        "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyH1",
+        "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyH2",
+        "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyH3"
+      ]
+      const keyInfo = 'test key information'
+
+      await hardhatPrePrintTrack.submit(paperCIDs[0], keyInfo, 'test description');
+      await hardhatPrePrintTrack.submit(paperCIDs[1], keyInfo, 'test description');
+      await hardhatPrePrintTrack.submit(paperCIDs[2], keyInfo, 'test description');
+
+      let prePrintCnt = await hardhatPrePrintTrack.prePrintCnt();
+      expect(prePrintCnt).to.equal(3);
+      let prePrintCIDs = await hardhatPrePrintTrack.prePrintCIDs(0, prePrintCnt - 1);
+      expect(prePrintCIDs).to.eql(paperCIDs);
+
+    });
+
+    it("should emit Submit events", async function () {
       const { hardhatPrePrintTrack, owner } = await loadFixture(
         deployPrePrintTrackFixture
       );
@@ -66,22 +92,22 @@ describe("PrePrintTrack contract", function () {
       const paperCID = "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo";
       const keyInfo = 'test key information'
 
-      const blockTime = Date.now() + 15;
+      const blockTime = Date.now() + 2;
       await time.setNextBlockTimestamp(blockTime);
 
       expect(await hardhatPrePrintTrack.submit(paperCID, keyInfo, 'test description'))
-      .to.emit(hardhatPrePrintTrack, "Submit")
-      .withArgs(paperCID, keyInfo, owner.address, blockTime, 'test description');
+        .to.emit(hardhatPrePrintTrack, "Submit")
+        .withArgs(paperCID, keyInfo, owner.address, blockTime, 'test description');
     });
 
-    it("should fail if two same file submitted", async function() {
+    it("should fail if two same file submitted", async function () {
       const { hardhatPrePrintTrack } = await loadFixture(
         deployPrePrintTrackFixture
       );
 
       const paperCID = "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo";
       const keyInfo = 'test key information'
-      
+
       await hardhatPrePrintTrack.submit(paperCID, keyInfo, '1st submit');
 
       await expect(
@@ -90,7 +116,41 @@ describe("PrePrintTrack contract", function () {
 
     });
 
-    it("the balance should be equal to the amount transfer to the contract", async function() {
+    it("getAuthorPapers should return right results", async function () {
+      const { hardhatPrePrintTrack, owner, address2 } = await loadFixture(
+        deployPrePrintTrackFixture
+      );
+
+      const paper1 = {
+        paperCID: "paper1CID",
+        keyInfo: 'paper1 key info',
+        description: 'paper1 description',
+      };
+
+      const paper2 = {
+        paperCID: "paper2CID",
+        keyInfo: 'paper2 key info',
+        description: 'paper2 description',
+      };
+
+      const paper3 = {
+        paperCID: "paper3CID",
+        keyInfo: 'paper3 key info',
+        description: 'paper3 description',
+      };
+
+      await hardhatPrePrintTrack.connect(address2).submit(paper1.paperCID, paper1.keyInfo, paper1.description);
+      await hardhatPrePrintTrack.connect(address2).submit(paper2.paperCID, paper2.keyInfo, paper2.description);
+      await hardhatPrePrintTrack.connect(owner).submit(paper3.paperCID, paper3.keyInfo, paper3.description);
+
+      const printCnt = await hardhatPrePrintTrack.prePrintCnt();
+
+      expect(await hardhatPrePrintTrack.getAuthorPapers(address2.address, 0, printCnt - 1)).to.deep.eq([paper1.paperCID, paper2.paperCID]);
+      expect(await hardhatPrePrintTrack.getAuthorPapers(owner.address, 0, printCnt - 1)).to.deep.eq([paper3.paperCID]);
+
+    });
+
+    it("the balance should be equal to the amount transfer to the contract", async function () {
       const { hardhatPrePrintTrack, address2 } = await loadFixture(
         deployPrePrintTrackFixture
       );
@@ -105,7 +165,7 @@ describe("PrePrintTrack contract", function () {
 
     });
 
-    it("the balance of the contract and owner after withdraw", async function() {
+    it("the balance of the contract and owner after withdraw", async function () {
       const { hardhatPrePrintTrack, owner, address2 } = await loadFixture(
         deployPrePrintTrackFixture
       );

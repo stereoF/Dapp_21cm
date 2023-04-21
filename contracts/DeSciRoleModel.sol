@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+// import "hardhat/console.sol";
+
 contract DeSciRoleModel {
     address payable private _owner;
     address[] private _editors;
@@ -8,8 +10,14 @@ contract DeSciRoleModel {
     mapping(address => uint256) private _editorsIndex;
     // mapping(address => uint256) private _reviewersIndex;
     event OwnershipTransferred(
+        uint256 indexed _changeTime,
         address indexed previousOwner,
         address indexed newOwner
+    );
+
+    event ChangeEditors(
+        uint256 indexed _changeTime,
+        address[] _newEditors
     );
 
     /**
@@ -18,7 +26,7 @@ contract DeSciRoleModel {
      */
     constructor() {
         _owner = payable(msg.sender);
-        emit OwnershipTransferred(address(0), _owner);
+        emit OwnershipTransferred(block.timestamp, address(0), _owner);
     }
 
     /**
@@ -61,7 +69,7 @@ contract DeSciRoleModel {
      */
     function _transferOwnership(address payable newOwner) internal {
         require(newOwner != address(0));
-        emit OwnershipTransferred(_owner, newOwner);
+        emit OwnershipTransferred(block.timestamp, _owner, newOwner);
         _owner = newOwner;
     }
 
@@ -70,18 +78,27 @@ contract DeSciRoleModel {
         _;
     }
 
+    // function isEditor() public view returns (bool) {
+    //     bool ret = false;
+    //     for (uint256 i = 0; i < _editors.length; i++) {
+    //         if (_editors[i] == msg.sender) {
+    //             ret = true;
+    //             break;
+    //         }
+    //     }
+    //     return ret;
+    // }
+
     function isEditor() public view returns (bool) {
         bool ret = false;
-        for (uint256 i = 0; i < _editors.length; i++) {
-            if (_editors[i] == msg.sender) {
-                ret = true;
-                break;
-            }
+        if (_editorsIndex[msg.sender] > 0) {
+            ret = true;
         }
         return ret;
     }
 
     function pushEditors(address[] memory editorAddrs) public onlyOwner {
+
         address addr;
         uint256 index;
         for (uint256 i = 0; i < editorAddrs.length; i++) {
@@ -91,6 +108,11 @@ contract DeSciRoleModel {
             index = _editors.length;
             _editorsIndex[addr] = index;
         }
+
+        emit ChangeEditors(
+            block.timestamp,
+            _editors
+        );
     }
 
     function removeEditor(address[] memory editorAddrs) public onlyOwner {
@@ -100,10 +122,15 @@ contract DeSciRoleModel {
                 address lastEditor = _editors[_editors.length - 1];
                 _editors[index - 1] = lastEditor;
                 _editors.pop();
-                _editorsIndex[editorAddrs[i]] = 0;
                 _editorsIndex[lastEditor] = index;
+                _editorsIndex[editorAddrs[i]] = 0;
             }
         }
+        
+        emit ChangeEditors(
+            block.timestamp,
+            _editors
+        );
     }
 
 }

@@ -14,6 +14,17 @@ describe("DeSciRoleModel contract", function () {
   }
 
   describe("Deployment", function() {
+    it("Should emit events when deploy", async function () {
+      const DeSciRoleModel = await ethers.getContractFactory("DeSciRoleModel");
+      const hardhatDeSciRoleModel = await DeSciRoleModel.deploy();
+      const receipt = await hardhatDeSciRoleModel.deployTransaction.wait();
+
+      expect(receipt.events[0].event).to.equal("OwnershipTransferred");
+      expect(receipt.events[0].args.previousOwner).to.equal(ethers.constants.AddressZero);
+      expect(receipt.events[0].args.newOwner).to.equal(await hardhatDeSciRoleModel.owner());
+
+    });
+
     it("Should set the right owner", async function () {
       const { hardhatDeSciRoleModel, owner } = await loadFixture(
         deployDeSciRoleModelFixture
@@ -46,6 +57,21 @@ describe("DeSciRoleModel contract", function () {
         expect(await hardhatDeSciRoleModel.connect(editor2).isEditor()).to.equal(true);
       });
 
+    it("should emit event when push editors", async function () {
+      const { hardhatDeSciRoleModel, editor1, editor2 } = await loadFixture(
+        deployDeSciRoleModelFixture
+      );
+
+      const blockTime = Date.now() + 2;
+      await time.setNextBlockTimestamp(blockTime);
+
+      expect(await hardhatDeSciRoleModel.pushEditors[editor1.address, editor2.address])
+        .to.emit(hardhatDeSciRoleModel, "ChangeEditors")
+        .withArgs(blockTime, [editor1.address, editor2.address])
+
+    });
+    
+
     it("remove editors", async function () {
         const { hardhatDeSciRoleModel, editor1, editor2, address2 } = await loadFixture(
           deployDeSciRoleModelFixture
@@ -60,6 +86,22 @@ describe("DeSciRoleModel contract", function () {
         expect(await hardhatDeSciRoleModel.connect(editor1).isEditor()).to.equal(false);
         expect(await hardhatDeSciRoleModel.connect(editor2).isEditor()).to.equal(false);
         expect(await hardhatDeSciRoleModel.connect(address2).isEditor()).to.equal(true);
+    });
+
+    it("should emit event when remove editors", async function () {
+      const { hardhatDeSciRoleModel, editor1, editor2, address2 } = await loadFixture(
+        deployDeSciRoleModelFixture
+      );
+
+      await hardhatDeSciRoleModel.pushEditors([editor1.address, editor2.address, address2.address]);
+
+      const blockTime = Date.now() + 2;
+      await time.setNextBlockTimestamp(blockTime);
+
+      expect(await hardhatDeSciRoleModel.removeEditor([editor1.address, editor2.address]))
+        .to.emit(hardhatDeSciRoleModel, "ChangeEditors")
+        .withArgs(blockTime, [address2.address])
+
     });
 
     it("should fail if push duplicated editors", async function() {
@@ -77,6 +119,17 @@ describe("DeSciRoleModel contract", function () {
         hardhatDeSciRoleModel.pushEditors([editor2.address])
       ).to.be.revertedWith("Duplicate editor");
 
+
+    });
+
+    it("add, remove, add editors", async function () {
+      const { hardhatDeSciRoleModel, editor1, editor2, address2 } = await loadFixture(
+        deployDeSciRoleModelFixture
+      );
+
+      await hardhatDeSciRoleModel.pushEditors([editor1.address, editor2.address, address2.address]);
+      await hardhatDeSciRoleModel.removeEditor([editor1.address, editor2.address, address2.address]);
+      await hardhatDeSciRoleModel.pushEditors([editor1.address, editor2.address, address2.address]);
 
     });
 

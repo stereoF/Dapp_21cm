@@ -11,7 +11,7 @@ describe("DeSciPrint contract", function () {
         const DeSciPrint = await ethers.getContractFactory("DeSciPrint");
         const contractName = "future";
         const hardhatDeSciPrint = await DeSciPrint.deploy(contractName);
-    
+
         return { hardhatDeSciPrint, contractName, owner, address1, address2, editor1, editor2, reviewer1, reviewer2, reviewer3 };
     };
 
@@ -27,39 +27,43 @@ describe("DeSciPrint contract", function () {
         const paper1 = {
             paperCID: "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo",
             keyInfo: 'paper 1',
+            description: 'paper 1 description',
             amount: ethers.utils.parseEther('1.5', 'ether')
         };
-        await hardhatDeSciPrint.connect(address1).submitForReview(paper1.paperCID, paper1.keyInfo, paper1.amount, 
+        await hardhatDeSciPrint.connect(address1).submitForReview(paper1.paperCID, paper1.keyInfo, paper1.description, paper1.amount,
             { value: paper1.amount.add(minGasCost) });
 
         const paper2 = {
             paperCID: "QmakBV63npN4DLpYheAq9jpn9yLqsGi3caSUtJ8GCUQ27H",
             keyInfo: 'paper 2',
+            description: 'paper 2 description',
             amount: ethers.utils.parseEther('1.7', 'ether')
         };
-        const blockTime = Date.now() + 15;
+        const blockTime = Date.now() + 2;
         await time.setNextBlockTimestamp(blockTime);
-        await hardhatDeSciPrint.connect(address2).submitForReview(paper2.paperCID, paper2.keyInfo, paper2.amount, 
+        await hardhatDeSciPrint.connect(address2).submitForReview(paper2.paperCID, paper2.keyInfo, paper2.description, paper2.amount,
             { value: paper2.amount.add(minGasCost) });
-    
-        return { hardhatDeSciPrint, owner, address1, address2, editor1, editor2, 
-            reviewer1, reviewer2, reviewer3, paper1, paper2, minGasCost, blockTime };
+
+        return {
+            hardhatDeSciPrint, owner, address1, address2, editor1, editor2,
+            reviewer1, reviewer2, reviewer3, paper1, paper2, minGasCost, blockTime, minGasCost
+        };
     };
 
     async function assignReviewersFixture() {
-        const { hardhatDeSciPrint, paper1, paper2, editor1, editor2, reviewer1, reviewer2, reviewer3 } = await loadFixture(
+        const { hardhatDeSciPrint, paper1, paper2, editor1, editor2, reviewer1, reviewer2, reviewer3, address1, address2, minGasCost } = await loadFixture(
             submitPrintsFixture
         );
 
         // await hardhatDeSciPrint.connect(owner).pushReviewers([reviewer1.address, reviewer2.address, reviewer3.address]);
 
-        await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, 
+        await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID,
             [reviewer1.address, reviewer2.address, reviewer3.address]);
 
-        await hardhatDeSciPrint.connect(editor2).reviewerAssign(paper2.paperCID, 
+        await hardhatDeSciPrint.connect(editor2).reviewerAssign(paper2.paperCID,
             [reviewer1.address, reviewer2.address]);
 
-        return { hardhatDeSciPrint, editor1, editor2, reviewer1, reviewer2, reviewer3, paper1, paper2 };
+        return { hardhatDeSciPrint, editor1, editor2, reviewer1, reviewer2, reviewer3, paper1, paper2, address1, address2, minGasCost };
     };
 
     describe("Deployment", function () {
@@ -78,7 +82,7 @@ describe("DeSciPrint contract", function () {
         });
     });
 
-    describe("Management", function() {
+    describe("Management", function () {
         it("Set minGasCost", async function () {
             const { hardhatDeSciPrint } = await loadFixture(
                 deployDeSciPrintFixture
@@ -86,8 +90,95 @@ describe("DeSciPrint contract", function () {
 
             const minGasCost = ethers.utils.parseEther('0.2', 'ether');
             await hardhatDeSciPrint.setGasFee(minGasCost, 0);
-            
+
             expect(await hardhatDeSciPrint.gasFee(0)).to.equal(ethers.utils.parseEther('0.2', 'ether'));
+
+        });
+
+        it("Should emit event when change gas fee", async function () {
+            const { hardhatDeSciPrint } = await loadFixture(
+                deployDeSciPrintFixture
+            );
+
+
+            const oldMinGasCost = await hardhatDeSciPrint.gasFee(0);
+            const newMinGasCost = ethers.utils.parseEther('0.4', 'ether');
+            const blockTime = Date.now() + 2;
+            await time.setNextBlockTimestamp(blockTime);
+
+            await expect(hardhatDeSciPrint.setGasFee(newMinGasCost, 0))
+                .to.emit(hardhatDeSciPrint, 'ChangeValue')
+                .withArgs(0, blockTime, 0, oldMinGasCost, newMinGasCost);
+        });
+
+        it("Change Bonus Weight", async function () {
+            const { hardhatDeSciPrint, owner } = await loadFixture(
+                deployDeSciPrintFixture
+            );
+
+            const bonusWeight = await hardhatDeSciPrint.bonusWeight();
+            expect(bonusWeight).to.deep.equal([3, 6, 3, 3, 1, 1, 1, 2, 5]);
+
+            const tx = await hardhatDeSciPrint.connect(owner).setBonusWeight(7, 1);
+            const receipt = await tx.wait()
+            expect(receipt.events[0].event).to.equal("ChangeValue");
+            expect(receipt.events[0].args.valueType).to.equal(1);
+            expect(receipt.events[0].args.index).to.equal(1);
+            expect(receipt.events[0].args.oldAmount).to.equal(6);
+            expect(receipt.events[0].args.newAmount).to.equal(7);
+
+            expect(await hardhatDeSciPrint.bonusWeight()).to.deep.equal([3, 7, 3, 3, 1, 1, 1, 2, 5]);
+
+        });
+
+        it("Change editorActLimit", async function () {
+            const { hardhatDeSciPrint, owner } = await loadFixture(
+                deployDeSciPrintFixture
+            );
+
+            const editorActLimit = await hardhatDeSciPrint.editorActLimit();
+            expect(editorActLimit).to.equal(4);
+
+            const tx = await hardhatDeSciPrint.connect(owner).setEditorActLimit(5);
+            const receipt = await tx.wait()
+            expect(receipt.events[0].event).to.equal("ChangeEditorActLimit");
+            expect(receipt.events[0].args.oldValue).to.equal(4);
+            expect(receipt.events[0].args.newValue).to.equal(5);
+
+        });
+
+        it("add, remove, add reviewers", async function () {
+            const { hardhatDeSciPrint, editor1, reviewer1, reviewer2, reviewer3, paper1 } = await loadFixture(
+                submitPrintsFixture
+            );
+
+            await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID,
+                [reviewer1.address, reviewer2.address, reviewer3.address]);
+            await hardhatDeSciPrint.connect(editor1).removeReviewer(paper1.paperCID, [reviewer1.address, reviewer2.address, reviewer3.address]);
+            await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID,
+                [reviewer1.address, reviewer2.address, reviewer3.address]);
+
+        });
+
+        it("Should emit event when assign and remove reviewers", async function () {
+            const { hardhatDeSciPrint, editor1, reviewer1, reviewer2, reviewer3, paper1 } = await loadFixture(
+                submitPrintsFixture
+            );
+
+            let blockTime = Date.now() + 2;
+            await time.setNextBlockTimestamp(blockTime);
+
+            expect(await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, [reviewer1.address, reviewer2.address, reviewer3.address]))
+                .to.emit(hardhatDeSciPrint, 'ChangeReviewers')
+                .withArgs(editor1.address, blockTime, paper1.paperCID, [reviewer1.address, reviewer2.address, reviewer3.address]);
+
+            blockTime = Date.now() + 2;
+            await time.setNextBlockTimestamp(blockTime);
+
+            expect(await hardhatDeSciPrint.connect(editor1).removeReviewer(paper1.paperCID, [reviewer1.address, reviewer2.address]))
+                .to.emit(hardhatDeSciPrint, 'ChangeReviewers')
+                .withArgs(editor1.address, blockTime, paper1.paperCID, [reviewer3.address]);
+
 
         });
 
@@ -96,7 +187,7 @@ describe("DeSciPrint contract", function () {
                 submitPrintsFixture
             );
 
-            await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, 
+            await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID,
                 [reviewer1.address]);
             processInfo = await hardhatDeSciPrint.deSciProcess(paper1.paperCID);
             expect(processInfo.editor).to.eq(editor1.address);
@@ -106,10 +197,30 @@ describe("DeSciPrint contract", function () {
             expect(processInfo.editor).to.eq(editor2.address);
         });
 
+        it("Should emit event when change editor", async function () {
+            const { hardhatDeSciPrint, owner, editor1, editor2, reviewer1, paper1 } = await loadFixture(
+                submitPrintsFixture
+            );
+
+            let blockTime = Date.now() + 2;
+            await time.setNextBlockTimestamp(blockTime);
+
+            expect(await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, [reviewer1.address]))
+                .to.emit(hardhatDeSciPrint, "ChangePaperEditor")
+                .withArgs(paper1.paperCID, editor1.address, blockTime);
+
+            blockTime = Date.now() + 2;
+            await time.setNextBlockTimestamp(blockTime);
+
+            expect(hardhatDeSciPrint.connect(owner).changeEditor(paper1.paperCID, editor2.address))
+                .to.emit(hardhatDeSciPrint, "ChangePaperEditor")
+                .withArgs(paper1.paperCID, editor2.address, blockTime);
+        });
+
     });
 
 
-    describe("Peer Review", function() {
+    describe("Peer Review", async function () {
 
         it("The balance of contract should equal to the authors paid", async function () {
             const { hardhatDeSciPrint, minGasCost, paper1, paper2 } = await loadFixture(
@@ -126,11 +237,12 @@ describe("DeSciPrint contract", function () {
                 submitPrintsFixture
             );
 
-            expect(await hardhatDeSciPrint.deSciFileCIDs(1)).to.equal(paper2.paperCID);
+            expect(await hardhatDeSciPrint.deSciPrintCIDMap(1)).to.equal(paper2.paperCID);
 
             printInfo = await hardhatDeSciPrint.deSciPrints(paper2.paperCID);
             expect(printInfo.submitAddress).to.eq(address2.address);
             expect(printInfo.keyInfo).to.eq(paper2.keyInfo);
+            expect(printInfo.nextCID).to.eq('');
             expect(printInfo.submitTime).to.eq(blockTime);
             // expect(printInfo.reviewerStatus).to.eq(0);
 
@@ -139,12 +251,33 @@ describe("DeSciPrint contract", function () {
             expect(processInfo.processStatus).to.eq(0);
         });
 
+        it("Should emit an event when submit a print", async function () {
+            const { hardhatDeSciPrint, address2, minGasCost } = await loadFixture(
+                submitPrintsFixture
+            );
+
+            const paper3 = {
+                paperCID: "QmakBV63npN4DLpYheAq9t2n9yLqsGi3caSUtJ8GCUQ27H",
+                keyInfo: 'paper 3',
+                description: 'paper 3 description',
+                amount: ethers.utils.parseEther('1.7', 'ether')
+            };
+            const blockTime = Date.now() + 2;
+            await time.setNextBlockTimestamp(blockTime);
+
+            expect(await hardhatDeSciPrint.submitForReview(paper3.paperCID, paper3.keyInfo, paper3.description, paper3.amount,
+                { value: paper3.amount.add(minGasCost) }))
+                .to.emit(hardhatDeSciPrint, 'submit')
+                .withArgs("", paper3.paperCID, paper3.keyInfo, address2.address, blockTime, paper3.description, paper3.amount);
+        });
+
         it("Get all prints in process by editor", async function () {
             const { hardhatDeSciPrint, editor1, paper1, paper2 } = await loadFixture(
                 submitPrintsFixture
             );
 
-            paperCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0);
+            let printCnt = await hardhatDeSciPrint.deSciPrintCnt();
+            paperCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0, 0, printCnt - 1);
             expect(paperCIDs).to.eql([paper1.paperCID, paper2.paperCID]);
 
         });
@@ -154,16 +287,17 @@ describe("DeSciPrint contract", function () {
                 submitPrintsFixture
             );
 
-            let [paperCID1, paperCID2] = await hardhatDeSciPrint.connect(editor1).printsPool(0);
+            let printCnt = await hardhatDeSciPrint.deSciPrintCnt();
+            let [paperCID1, paperCID2] = await hardhatDeSciPrint.connect(editor1).printsPool(0, 0, printCnt - 1);
             let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
-            const blockTime = Date.now() + 15;
+            const blockTime = Date.now() + 2;
             await time.setNextBlockTimestamp(blockTime);
             await hardhatDeSciPrint.connect(editor1).editorReject(paperCID1, comment)
 
-            pendingCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0);
+            pendingCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0, 0, printCnt - 1);
             expect(pendingCIDs).to.eql([paperCID2]);
 
-            rejectedCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(2);
+            rejectedCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(2, 0, printCnt - 1);
             expect(rejectedCIDs).to.eql([paperCID1]);
 
             processInfo = await hardhatDeSciPrint.deSciProcess(paperCID1);
@@ -177,12 +311,28 @@ describe("DeSciPrint contract", function () {
 
         });
 
+        it("Should emit event when editor reject paper", async function () {
+            const { hardhatDeSciPrint, editor1, paper1 } = await loadFixture(
+                submitPrintsFixture
+            );
+
+            let blockTime = Date.now() + 2;
+            await time.setNextBlockTimestamp(blockTime);
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            expect(await hardhatDeSciPrint.connect(editor1).editorReject(paper1.paperCID, comment))
+                .to.emit(hardhatDeSciPrint, "Comment")
+                .withArgs(editor1.address, blockTime, paper1.paperCID, comment, 2);
+
+        });
+
+
         it("Need append reviewer if less than 2 reviewers", async function () {
             const { hardhatDeSciPrint, paper1, editor1, reviewer1 } = await loadFixture(
                 submitPrintsFixture
             );
 
-            await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, 
+            await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID,
                 [reviewer1.address]);
 
             processInfo = await hardhatDeSciPrint.deSciProcess(paper1.paperCID);
@@ -193,8 +343,8 @@ describe("DeSciPrint contract", function () {
             const { hardhatDeSciPrint, paper1, editor1, editor2, reviewer1, reviewer2, reviewer3 } = await loadFixture(
                 submitPrintsFixture
             );
-            
-            await expect(hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, 
+
+            await expect(hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID,
                 [reviewer1.address, reviewer2.address, reviewer3.address, editor2.address]))
                 .to.be.revertedWith("No more than 3 reviewers");
         });
@@ -204,10 +354,12 @@ describe("DeSciPrint contract", function () {
                 assignReviewersFixture
             );
 
-            paperCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0);
+            let printCnt = await hardhatDeSciPrint.deSciPrintCnt();
+
+            paperCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(0, 0, printCnt - 1);
             expect(paperCIDs).to.eql([]);
 
-            paperCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(1);
+            paperCIDs = await hardhatDeSciPrint.connect(editor1).printsPool(1, 0, printCnt - 1);
             expect(paperCIDs).to.eql([paper1.paperCID, paper2.paperCID]);
 
         });
@@ -230,7 +382,7 @@ describe("DeSciPrint contract", function () {
                 assignReviewersFixture
             );
 
-            const blockTime = Date.now() + 15;
+            const blockTime = Date.now() + 2;
             await time.setNextBlockTimestamp(blockTime);
 
             let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
@@ -240,6 +392,21 @@ describe("DeSciPrint contract", function () {
             expect(reviewInfo.comment).to.eq(comment);
             expect(reviewInfo.commentTime).to.eq(blockTime);
             expect(reviewInfo.reviewerStatus).to.eq(1);
+        });
+
+        it("Should emit event when reviewer submit comment", async function () {
+            const { hardhatDeSciPrint, reviewer1, paper1 } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let blockTime = Date.now() + 2;
+            await time.setNextBlockTimestamp(blockTime);
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            expect(await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper1.paperCID, comment, 1))
+                .to.emit(hardhatDeSciPrint, "Comment")
+                .withArgs(reviewer1.address, blockTime, paper1.paperCID, comment, 1);
+
         });
 
         it("Remove 2 reviewers then need append reviewer", async function () {
@@ -264,7 +431,7 @@ describe("DeSciPrint contract", function () {
             await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper1.paperCID, comment, 3);
             await expect(
                 hardhatDeSciPrint.connect(editor1).removeReviewer(paper1.paperCID, [reviewer1.address, reviewer3.address])
-              ).to.be.revertedWith("Can only remove no action reviewer");
+            ).to.be.revertedWith("Can only remove no action reviewer");
 
         });
 
@@ -291,6 +458,20 @@ describe("DeSciPrint contract", function () {
             expect(processInfo.processStatus).to.eq(7);
         });
 
+        it(">= 2 pass then emit event", async function () {
+            const { hardhatDeSciPrint, paper1, reviewer1, reviewer2 } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper1.paperCID, comment, 3);
+
+            comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs5';
+            expect(await hardhatDeSciPrint.connect(reviewer2).reviewPrint(paper1.paperCID, comment, 3))
+                .to.emit(hardhatDeSciPrint, "ChangePaperStatus")
+                .withArgs(paper1.paperCID, 7);
+        });
+
         it(">= 2 reject then reject", async function () {
             const { hardhatDeSciPrint, paper1, reviewer1, reviewer2, reviewer3 } = await loadFixture(
                 assignReviewersFixture
@@ -306,6 +487,20 @@ describe("DeSciPrint contract", function () {
             expect(processInfo.processStatus).to.eq(3);
         });
 
+        it(">= 2 reject then emit event", async function () {
+            const { hardhatDeSciPrint, paper1, reviewer1, reviewer2 } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper1.paperCID, comment, 2);
+
+            comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs5';
+            expect(await hardhatDeSciPrint.connect(reviewer2).reviewPrint(paper1.paperCID, comment, 2))
+                .to.emit(hardhatDeSciPrint, "ChangePaperStatus")
+                .withArgs(paper1.paperCID, 3);
+        });
+
         it("Need append reviewer if 1 reject among 2 reviewers", async function () {
             const { hardhatDeSciPrint, paper2, reviewer1 } = await loadFixture(
                 assignReviewersFixture
@@ -316,6 +511,17 @@ describe("DeSciPrint contract", function () {
 
             processInfo = await hardhatDeSciPrint.deSciProcess(paper2.paperCID);
             expect(processInfo.processStatus).to.eq(4);
+        });
+
+        it("Emit event if 1 reject among 2 reviewers", async function () {
+            const { hardhatDeSciPrint, paper2, reviewer1 } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            expect(await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper2.paperCID, comment, 2))
+                .to.emit(hardhatDeSciPrint, "ChangePaperStatus")
+                .withArgs(paper2.paperCID, 4);
         });
 
         it("Need revise if 1 revise, 1 pass and 1 reject", async function () {
@@ -348,6 +554,19 @@ describe("DeSciPrint contract", function () {
             processInfo = await hardhatDeSciPrint.deSciProcess(paper2.paperCID);
             expect(processInfo.processStatus).to.eq(5);
 
+        });
+
+        it("Emit event if 2 revise", async function () {
+            const { hardhatDeSciPrint, paper2, reviewer1, reviewer2 } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper2.paperCID, comment, 1);
+            comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            expect(await hardhatDeSciPrint.connect(reviewer2).reviewPrint(paper2.paperCID, comment, 1))
+                .to.emit(hardhatDeSciPrint, "ChangePaperStatus")
+                .withArgs(paper2.paperCID, 5);
         });
 
         it("Need revise if 2 revise and 1 reject", async function () {
@@ -384,9 +603,165 @@ describe("DeSciPrint contract", function () {
 
         });
 
+        it("Reply reviewer", async function () {
+            const { hardhatDeSciPrint, paper1, address1, reviewer1 } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper1.paperCID, comment, 3);
+
+            const blockTime = Date.now() + 2;
+            await time.setNextBlockTimestamp(blockTime);
+
+            let replyCID = 'QmakBV63npN5R2c0heBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(address1).replyReviewInfo(paper1.paperCID, reviewer1.address, replyCID);
+
+            reviewInfo = await hardhatDeSciPrint.deSciReviews(paper1.paperCID, reviewer1.address);
+
+            expect(reviewInfo.reply).to.eq(replyCID);
+            expect(reviewInfo.replyTime).to.eq(blockTime);
+
+        });
+
+        it("Should emit event when reply reviewer", async function () {
+            const { hardhatDeSciPrint, paper1, address1, reviewer1 } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper1.paperCID, comment, 3);
+
+            const blockTime = Date.now() + 2;
+            await time.setNextBlockTimestamp(blockTime);
+
+            let replyCID = 'QmakBV63npN5R2c0heBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+
+            expect(await hardhatDeSciPrint.connect(address1).replyReviewInfo(paper1.paperCID, reviewer1.address, replyCID))
+                .to.emit(hardhatDeSciPrint, "ReplyComment")
+                .withArgs(paper1.paperCID, reviewer1.address, blockTime, replyCID);
+
+        });
+
+        it("Reply by a new paper", async function () {
+            const { hardhatDeSciPrint, paper2, reviewer1, reviewer2, address2, minGasCost } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper2.paperCID, comment, 1);
+            comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer2).reviewPrint(paper2.paperCID, comment, 1);
+
+            const blockTime = Date.now() + 2;
+            await time.setNextBlockTimestamp(blockTime);
+
+            const newPaper = {
+                paperCID: "QmakBV63npN4DLlYheAq9jpn9yLqtGi3caSUtJ8GCUQ27H",
+                keyInfo: 'new paper key info',
+                description: 'new paper description',
+                amount: ethers.utils.parseEther('1.7', 'ether')
+            };
+            await hardhatDeSciPrint.connect(address2).replyNew(paper2.paperCID, newPaper.paperCID, newPaper.keyInfo, newPaper.description, newPaper.amount,
+                { value: minGasCost.add(newPaper.amount) });
+
+            printInfo = await hardhatDeSciPrint.deSciPrints(newPaper.paperCID);
+            expect(printInfo.submitAddress).to.eq(address2.address);
+            expect(printInfo.keyInfo).to.eq(newPaper.keyInfo);
+            expect(printInfo.prevCID).to.eq(paper2.paperCID);
+            expect(printInfo.submitTime).to.eq(blockTime);
+            expect(printInfo.nextCID).to.eq('');
+
+            processInfo = await hardhatDeSciPrint.deSciProcess(newPaper.paperCID);
+            expect(processInfo.donate).to.eq(newPaper.amount);
+            expect(processInfo.processStatus).to.eq(1);
+
+            PrePrintInfo = await hardhatDeSciPrint.deSciPrints(paper2.paperCID);
+            expect(PrePrintInfo.nextCID).to.eq(newPaper.paperCID);
+
+        });
+
+        it("Should emit event when reply new paper", async function () {
+            const { hardhatDeSciPrint, paper2, reviewer1, reviewer2, address2, minGasCost } = await loadFixture(
+                assignReviewersFixture
+            );
+
+            let comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer1).reviewPrint(paper2.paperCID, comment, 1);
+            comment = 'QmakBV63npN4DLpYheBq9jp79yLqsGi3caSUtJ8GCUQTs4';
+            await hardhatDeSciPrint.connect(reviewer2).reviewPrint(paper2.paperCID, comment, 1);
+
+            const blockTime = Date.now() + 2;
+            await time.setNextBlockTimestamp(blockTime);
+
+            const newPaper = {
+                paperCID: "QmakBV63npN4DLlYheAq9jpn9yLqtGi3caSUtJ8GCUQ27H",
+                keyInfo: 'new paper key info',
+                description: 'new paper description',
+                amount: ethers.utils.parseEther('1.7', 'ether')
+            };
+
+            expect(await hardhatDeSciPrint.connect(address2).replyNew(paper2.paperCID, newPaper.paperCID, newPaper.keyInfo, newPaper.description, newPaper.amount,
+                { value: minGasCost.add(newPaper.amount) }))
+                .to.emit(hardhatDeSciPrint, 'Submit')
+                .withArgs(paper2.paperCID, newPaper.paperCID, newPaper.keyInfo, address2.address, blockTime, newPaper.description, newPaper.amount);
+
+        });
+
+        it("getEditorPapers, getReviewerPapers, getAuthorPapers should return right results", async function () {
+            const { hardhatDeSciPrint, owner, address1, address2, editor1, editor2, reviewer1, reviewer2, reviewer3 } = await loadFixture(
+                deployDeSciPrintFixture
+            );
+
+            const minGasCost = await hardhatDeSciPrint.gasFee(0);
+            await hardhatDeSciPrint.pushEditors([editor1.address, editor2.address]);
+
+            const paper1 = {
+                paperCID: "paper1CID",
+                keyInfo: 'paper1 key info',
+                description: 'paper1 description',
+                amount: ethers.utils.parseEther('1.7', 'ether')
+            };
+
+            const paper2 = {
+                paperCID: "paper2CID",
+                keyInfo: 'paper2 key info',
+                description: 'paper2 description',
+                amount: ethers.utils.parseEther('1.7', 'ether')
+            };
+
+            const paper3 = {
+                paperCID: "paper3CID",
+                keyInfo: 'paper3 key info',
+                description: 'paper3 description',
+                amount: ethers.utils.parseEther('1.7', 'ether')
+            };
+        });
+
+        await hardhatDeSciPrint.connect(address1).submitForReview(paper1.paperCID, paper1.keyInfo, paper1.description, paper1.amount,
+            { value: paper1.amount.add(minGasCost) });
+
+        await hardhatDeSciPrint.connect(address1).submitForReview(paper2.paperCID, paper2.keyInfo, paper2.description, paper2.amount,
+            { value: paper2.amount.add(minGasCost) });
+
+        await hardhatDeSciPrint.connect(address1).submitForReview(paper3.paperCID, paper3.keyInfo, paper3.description, paper3.amount,
+            { value: paper1.amount.add(minGasCost) });
+
+        await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, [reviewer1.address]);
+
+        const deSciPrintCnt = await hardhatDeSciPrint.deSciPrintCnt();
+
+        expect(await hardhatDeSciPrint.getEditorPapers(editor1.address, 4, 0, deSciPrintCnt-1)).to.deep.eq([paper1.paperCID]);
+        expect(await hardhatDeSciPrint.getEditorPapers(editor2.address, 4, 0, deSciPrintCnt-1)).to.deep.eq([]);
+        expect(await hardhatDeSciPrint.getReviewerPapers(reviewer1.address, 4, 0, deSciPrintCnt-1)).to.deep.eq([paper1.paperCID]);
+        expect(await hardhatDeSciPrint.getReviewerPapers(reviewer2.address, 4, 0, deSciPrintCnt-1)).to.deep.eq([]);
+        expect(await hardhatDeSciPrint.getAuthorPapers(address1.address, 4, 0, deSciPrintCnt-1)).to.deep.eq([paper1.paperCID]);
+        expect(await hardhatDeSciPrint.getAuthorPapers(address2.address, 4, 0, deSciPrintCnt-1)).to.deep.eq([]);
+        expect(await hardhatDeSciPrint.getAuthorPapers(address1.address, 0, 0, deSciPrintCnt-1)).to.deep.eq([paper2.paperCID, paper3.paperCID]);
+
     });
 
-    describe("economy system", function() {
+    describe("economy system", function () {
         async function allocateBalanceFixture() {
             const { hardhatDeSciPrint, address1, editor1, reviewer1, reviewer2, owner } = await loadFixture(
                 deployDeSciPrintFixture
@@ -398,23 +773,24 @@ describe("DeSciPrint contract", function () {
             const bonusWeight = await hardhatDeSciPrint.bonusWeight();
 
             let totalBonusWeight = BigNumber.from("0");
-            for(let i = 0;i<bonusWeight.length;i++){
+            for (let i = 0; i < bonusWeight.length; i++) {
                 totalBonusWeight = totalBonusWeight.add(bonusWeight[i]);
             }
 
             await hardhatDeSciPrint.pushEditors([editor1.address]);
-    
+
             const paper1 = {
                 paperCID: "QmT1n5DZWHurMHC5DuMi7DZ7NaYkZQmi6iq9GszVdwvyHo",
                 keyInfo: 'paper 1',
+                description: 'paper 1 description',
                 amount: ethers.utils.parseEther('0.5', 'ether')
             };
 
             totalAmount = paper1.amount.add(minGasCost);
-            await hardhatDeSciPrint.connect(address1).submitForReview(paper1.paperCID, paper1.keyInfo, paper1.amount, 
+            await hardhatDeSciPrint.connect(address1).submitForReview(paper1.paperCID, paper1.keyInfo, paper1.description, paper1.amount,
                 { value: totalAmount });
 
-            await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID, 
+            await hardhatDeSciPrint.connect(editor1).reviewerAssign(paper1.paperCID,
                 [reviewer1.address, reviewer2.address]);
 
             const editorBonus = paper1.amount.div(totalBonusWeight).mul(bonusWeight[3]);
@@ -432,8 +808,10 @@ describe("DeSciPrint contract", function () {
             const publishBonus = paper1.amount.div(totalBonusWeight).mul(bonusWeight[7]);
             editorBalance = editorBalance.add(publishBonus)
 
-            return { hardhatDeSciPrint, minGasCost, editorGas, reviewerGas, paper1, totalAmount, editor1, 
-                reviewer1, reviewer2, editorBalance, reviewerBalance, owner};
+            return {
+                hardhatDeSciPrint, minGasCost, editorGas, reviewerGas, paper1, totalAmount, editor1,
+                reviewer1, reviewer2, editorBalance, reviewerBalance, owner
+            };
 
         };
 
@@ -447,14 +825,14 @@ describe("DeSciPrint contract", function () {
                 value: ethers.utils.parseEther('10', 'ether')
             };
             const transaction = await address1.sendTransaction(tx);
-        
+
             expect(await hardhatDeSciPrint.getBalance()).to.equal(ethers.utils.parseEther('10', 'ether'));
 
         });
 
 
         it("The balance amount", async function () {
-            const { hardhatDeSciPrint, totalAmount, editor1, reviewer1, reviewer2, editorBalance, reviewerBalance} = await loadFixture(
+            const { hardhatDeSciPrint, totalAmount, editor1, reviewer1, reviewer2, editorBalance, reviewerBalance } = await loadFixture(
                 allocateBalanceFixture
             );
 
@@ -467,7 +845,7 @@ describe("DeSciPrint contract", function () {
 
 
         it("Withdraw Balance", async function () {
-            const { hardhatDeSciPrint, reviewer1, reviewer2, editor1, editorBalance, reviewerBalance} = await loadFixture(
+            const { hardhatDeSciPrint, reviewer1, reviewer2, editor1, editorBalance, reviewerBalance } = await loadFixture(
                 allocateBalanceFixture
             );
 
@@ -477,6 +855,9 @@ describe("DeSciPrint contract", function () {
 
             tx = await hardhatDeSciPrint.connect(reviewer1).withdrawToken();
             let receipt = await tx.wait();
+            expect(receipt.events[0].event).to.equal("ChangeToken");
+            expect(receipt.events[0].args.balanceOwner).to.equal(reviewer1.address);
+            expect(receipt.events[0].args.finalAmount).to.equal(0);
             let gasSpent = receipt.gasUsed.mul(receipt.effectiveGasPrice);
             expect((await ethers.provider.getBalance(reviewer1.address)).add(gasSpent)).to.eq(reviewer1Balance.add(reviewerBalance));
 
@@ -492,9 +873,9 @@ describe("DeSciPrint contract", function () {
 
         });
 
-        
+
         it("Withdraw avalible balance", async function () {
-            const { hardhatDeSciPrint, owner, editorBalance, reviewerBalance, totalAmount} = await loadFixture(
+            const { hardhatDeSciPrint, owner, editorBalance, reviewerBalance, totalAmount } = await loadFixture(
                 allocateBalanceFixture
             );
 
