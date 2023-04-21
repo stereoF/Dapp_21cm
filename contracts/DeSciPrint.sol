@@ -13,11 +13,11 @@ contract DeSciPrint is DeSciRoleModel {
 
     // minGasCost, editorActGas, reviewerActGas, minWithdrawValue, minDonate
     uint256[5] public gasFee = [
-        0.05 ether,
-        0.02 ether,
-        0.007 ether,
-        0.001 ether,
-        2000 gwei
+        0.5 ether,
+        0.2 ether,
+        0.07 ether,
+        0.01 ether,
+        0.1 ether
     ];
 
     enum ValueType {
