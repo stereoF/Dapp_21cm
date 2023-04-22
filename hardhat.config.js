@@ -5,7 +5,7 @@ require('dotenv').config()
 // const { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } = require("hardhat/builtin-tasks/task-names");
 // const path = require("path");
 
-const { MUMBAI_PRIVATE_KEY, MUMBAI_POLYGONSCAN_API_KEY, PRIVATE_KEY } = process.env;
+const { MUMBAI_PRIVATE_KEY, MUMBAI_POLYGONSCAN_API_KEY, PRIVATE_KEY, POLYGON_URL } = process.env;
 
 // subtask(
 //   TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS,
@@ -46,7 +46,7 @@ module.exports = {
       accounts: [MUMBAI_PRIVATE_KEY]
     },
     polygon: {
-      url: "https://polygon-mainnet.infura.io",
+      url: POLYGON_URL,
       accounts: [PRIVATE_KEY]
     }
     // goerli: {
