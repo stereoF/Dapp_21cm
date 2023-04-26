@@ -24,8 +24,8 @@ async function main() {
     savePrePrintFrontendFiles(prePrintTrack);
 
     contracts = []
-    // deSciPrintNames = ["Future", "Industrial Data Science", "PKU Space Science Review", "Complex system", "Decentralization"];
-    deSciPrintNames = ["Future", "Industrial Data Science", "Decentralization"];
+    deSciPrintNames = ["Future", "Industrial Data Science", "PKU Space Science Review", "Complex system", "Decentralization"];
+    // deSciPrintNames = ["Future", "Industrial Data Science", "Decentralization"];
     for (let i = 0; i < deSciPrintNames.length; i++) {
       const DeSciPrint = await ethers.getContractFactory("DeSciPrint");
       const deSciPrint = await DeSciPrint.deploy(deSciPrintNames[i]);
