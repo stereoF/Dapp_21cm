@@ -15,17 +15,17 @@ async function main() {
     const [deployer] = await ethers.getSigners();
     console.log("Deploying contracts with the account:", deployer.address);
   
-    const PrePrintTrack = await ethers.getContractFactory("PrePrintTrack");
-    const prePrintTrack = await PrePrintTrack.deploy();
-    await prePrintTrack.deployed();
-    console.log("PrePrintTrack address:", prePrintTrack.address);
+    // const PrePrintTrack = await ethers.getContractFactory("PrePrintTrack");
+    // const prePrintTrack = await PrePrintTrack.deploy();
+    // await prePrintTrack.deployed();
+    // console.log("PrePrintTrack address:", prePrintTrack.address);
 
     // We also save the contract's artifacts and address in the frontend directory
-    savePrePrintFrontendFiles(prePrintTrack);
+    // savePrePrintFrontendFiles(prePrintTrack);
 
     contracts = []
-    deSciPrintNames = ["Future", "Industrial Data Science", "PKU Space Science Review", "Complex system", "Decentralization"];
-    // deSciPrintNames = ["Future", "Industrial Data Science", "Decentralization"];
+    // deSciPrintNames = ["Future", "Industrial Data Science", "PKU Space Science Review", "Complex system", "Decentralization"];
+    deSciPrintNames = ["Physical Chemistry"];
     for (let i = 0; i < deSciPrintNames.length; i++) {
       const DeSciPrint = await ethers.getContractFactory("DeSciPrint");
       const deSciPrint = await DeSciPrint.deploy(deSciPrintNames[i]);
