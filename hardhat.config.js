@@ -48,7 +48,11 @@ module.exports = {
     polygon: {
       url: POLYGON_URL,
       accounts: [PRIVATE_KEY]
-    }
+    },
+    bnb_testnet: {
+      url: "https://bsc-testnet-dataseed.bnbchain.org",
+      accounts: [PRIVATE_KEY]
+    },
     // goerli: {
     //   url: `https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
     //   accounts: [GOERLI_PRIVATE_KEY]
